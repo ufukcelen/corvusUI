@@ -48,6 +48,8 @@ final class CorvusManager: ObservableObject {
     @Published var isRunningTask: Bool = false
     @Published var currentTaskTitle: String? = nil
     private var activeProcess: Process?
+    private var activeStdoutPipe: Pipe?
+    private var activeStderrPipe: Pipe?
     
     // System Settings & Status
     @Published var corvusProjectPath: String {
@@ -181,7 +183,7 @@ final class CorvusManager: ObservableObject {
             lastUpdateCheckDate = Date()
         }
         
-                // 1. Fetch Corvus Mac UI latest tags & check version
+        // 1. Fetch Corvus Mac UI latest tags & check version
         if let url = URL(string: "https://api.github.com/repos/ufukcelen/corvusUI/tags"),
            let (data, _) = try? await URLSession.shared.data(from: url),
            let tags = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
@@ -256,20 +258,27 @@ final class CorvusManager: ObservableObject {
             }
             
             // 2. Pull App UI Repo (if git exists)
-            let appDir = "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac"
-            if FileManager.default.fileExists(atPath: (appDir as NSString).appendingPathComponent(".git")) {
-                let proc2 = Process()
-                proc2.executableURL = URL(fileURLWithPath: gitPath)
-                proc2.arguments = ["-C", appDir, "pull", "origin", "main"]
-                let pipe2 = Pipe()
-                proc2.standardOutput = pipe2
-                proc2.standardError = pipe2
-                try? proc2.run()
-                proc2.waitUntilExit()
-                let out2 = String(data: pipe2.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                logLines.append("[Corvus Mac UI] " + (out2.isEmpty ? "Güncel" : out2.trimmingCharacters(in: .whitespacesAndNewlines)))
+            let candidateAppDirs = [
+                (Bundle.main.bundlePath as NSString).deletingLastPathComponent,
+                "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac"
+            ]
+            for appDir in candidateAppDirs {
+                if FileManager.default.fileExists(atPath: (appDir as NSString).appendingPathComponent(".git")) {
+                    let proc2 = Process()
+                    proc2.executableURL = URL(fileURLWithPath: gitPath)
+                    proc2.arguments = ["-C", appDir, "pull", "origin", "main"]
+                    let pipe2 = Pipe()
+                    proc2.standardOutput = pipe2
+                    proc2.standardError = pipe2
+                    try? proc2.run()
+                    proc2.waitUntilExit()
+                    let out2 = String(data: pipe2.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+                    logLines.append("[Corvus Mac UI] " + (out2.isEmpty ? "Güncel" : out2.trimmingCharacters(in: .whitespacesAndNewlines)))
+                    break
+                }
             }
             
+            let finalLogs = logLines
             await MainActor.run {
                 self.isUpdatingSubmodule = false
                 if self.isNewAppVersionAvailable {
@@ -277,7 +286,7 @@ final class CorvusManager: ObservableObject {
                 } else {
                     self.submoduleUpdateStatus = "✓ Tüm bileşenler başarıyla güncellendi (v\(self.appVersion))!"
                 }
-                for line in logLines {
+                for line in finalLogs {
                     self.consoleLogs.append(ProcessLogItem(text: line, isError: false, isProgress: false))
                 }
                 self.checkSystemHealth()
@@ -739,6 +748,8 @@ final class CorvusManager: ObservableObject {
         process.standardError = stderrPipe
         
         activeProcess = process
+        activeStdoutPipe = stdoutPipe
+        activeStderrPipe = stderrPipe
         
         stdoutPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
@@ -763,7 +774,9 @@ final class CorvusManager: ObservableObject {
             }
         }
         
-        process.terminationHandler = { [weak self] proc in
+        process.terminationHandler = { [weak self, weak stdoutPipe, weak stderrPipe] proc in
+            stdoutPipe?.fileHandleForReading.readabilityHandler = nil
+            stderrPipe?.fileHandleForReading.readabilityHandler = nil
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
                 self.isRunningTask = false
@@ -775,6 +788,8 @@ final class CorvusManager: ObservableObject {
                     self.consoleLogs.append(ProcessLogItem(text: "✗ [HATA] İşlem sonlandı (Çıkış Kodu: \(code)).", isError: true, isProgress: false))
                 }
                 self.activeProcess = nil
+                self.activeStdoutPipe = nil
+                self.activeStderrPipe = nil
                 self.currentTaskTitle = nil
                 
                 // Re-sync after any task run
@@ -787,12 +802,22 @@ final class CorvusManager: ObservableObject {
         } catch {
             isRunningTask = false
             currentTaskTitle = nil
+            stdoutPipe.fileHandleForReading.readabilityHandler = nil
+            stderrPipe.fileHandleForReading.readabilityHandler = nil
+            activeProcess = nil
+            activeStdoutPipe = nil
+            activeStderrPipe = nil
             consoleLogs.append(ProcessLogItem(text: "✗ Süreç başlatılamadı: \(error.localizedDescription)", isError: true, isProgress: false))
         }
     }
     
     func terminateActiveTask() {
+        activeStdoutPipe?.fileHandleForReading.readabilityHandler = nil
+        activeStderrPipe?.fileHandleForReading.readabilityHandler = nil
+        activeStdoutPipe = nil
+        activeStderrPipe = nil
         activeProcess?.terminate()
+        activeProcess = nil
         isRunningTask = false
         currentTaskTitle = nil
         consoleLogs.append(ProcessLogItem(text: "⚠️ Kullanıcı tarafından durduruldu.", isError: true, isProgress: false))

@@ -71,7 +71,7 @@ struct DashboardView: View {
                         .font(.title2.weight(.bold))
                         .foregroundColor(AppTheme.textPrimary)
                     
-                    Text("v1.5.0")
+                    Text("v\(manager.appVersion)")
                         .font(.caption2.weight(.heavy))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -322,10 +322,10 @@ struct DashboardView: View {
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(AppTheme.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(AppTheme.border, lineWidth: 1)
-                    )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(AppTheme.border, lineWidth: 1)
+                )
             )
         }
         .buttonStyle(.plain)
