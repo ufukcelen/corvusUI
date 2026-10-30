@@ -18,7 +18,9 @@ final class CorvusManager: ObservableObject {
     let firebaseBaseURL = "https://tellal-otomasyon-default-rtdb.europe-west1.firebasedatabase.app/tellal_db"
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
-    let appVersion = "0.1.1"
+    var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.1"
+    }
     let engineVersion = "1.5.0"
     
     // MARK: - Published Properties
@@ -76,6 +78,8 @@ final class CorvusManager: ObservableObject {
     @Published var latestAppCommit: String? = nil
     @Published var latestCliCommit: String? = nil
     @Published var lastUpdateCheckDate: Date? = nil
+    @Published var latestAppTag: String? = nil
+    @Published var isNewAppVersionAvailable: Bool = false
     
     // Notifications
     @Published var latestNotificationText: String?
@@ -177,7 +181,23 @@ final class CorvusManager: ObservableObject {
             lastUpdateCheckDate = Date()
         }
         
-        // 1. Fetch Corvus Mac UI latest commit
+                // 1. Fetch Corvus Mac UI latest tags & check version
+        if let url = URL(string: "https://api.github.com/repos/ufukcelen/corvusUI/tags"),
+           let (data, _) = try? await URLSession.shared.data(from: url),
+           let tags = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+           let firstTag = tags.first,
+           let tagName = firstTag["name"] as? String {
+            self.latestAppTag = tagName
+            let cleanTag = tagName.replacingOccurrences(of: "v", with: "").trimmingCharacters(in: .whitespaces)
+            let current = self.appVersion.replacingOccurrences(of: "v", with: "").trimmingCharacters(in: .whitespaces)
+            if cleanTag.compare(current, options: .numeric) == .orderedDescending {
+                self.isNewAppVersionAvailable = true
+            } else {
+                self.isNewAppVersionAvailable = false
+            }
+        }
+        
+        // 1b. Fetch Corvus Mac UI latest commit
         if let url = URL(string: "https://api.github.com/repos/ufukcelen/corvusUI/commits/main"),
            let (data, _) = try? await URLSession.shared.data(from: url),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -252,7 +272,11 @@ final class CorvusManager: ObservableObject {
             
             await MainActor.run {
                 self.isUpdatingSubmodule = false
-                self.submoduleUpdateStatus = "✓ Tüm bileşenler başarıyla güncellendi!"
+                if self.isNewAppVersionAvailable {
+                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.1.1")) için güncel DMG paketini kurmanız gerekir."
+                } else {
+                    self.submoduleUpdateStatus = "✓ Tüm bileşenler başarıyla güncellendi (v\(self.appVersion))!"
+                }
                 for line in logLines {
                     self.consoleLogs.append(ProcessLogItem(text: line, isError: false, isProgress: false))
                 }

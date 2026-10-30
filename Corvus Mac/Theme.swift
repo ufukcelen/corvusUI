@@ -137,6 +137,7 @@ struct AppTheme {
     static let accentPurple = Color(hex: "A855F7")
     static let accentBlue = Color(hex: "3B82F6")
     static let accentOrange = Color(hex: "F97316")
+    static let accentAmber = Color(hex: "F59E0B")
     static let accentGreen = Color(hex: "10B981")
     static let accentRose = Color(hex: "F43F5E")
     
