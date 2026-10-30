@@ -18,7 +18,7 @@ final class CorvusManager: ObservableObject {
     let firebaseBaseURL = "https://tellal-otomasyon-default-rtdb.europe-west1.firebasedatabase.app/tellal_db"
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
-    let appVersion = "0.1.0"
+    let appVersion = "0.1.1"
     let engineVersion = "1.5.0"
     
     // MARK: - Published Properties
