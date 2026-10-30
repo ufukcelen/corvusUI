@@ -12,6 +12,12 @@ struct Corvus_MacApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .frame(minWidth: 980, idealWidth: 1100, minHeight: 640, idealHeight: 740)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+        .commands {
+            SidebarCommands()
         }
     }
 }
