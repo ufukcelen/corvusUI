@@ -18,15 +18,16 @@ struct UykusuzTosbaView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Uykusuz Tosba Stüdyosu")
                         .font(.title2.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("Futbol, Canlı Maç, FC27 Kariyer ve Tek Maçtan Yatanlar duyuru otomasyonları.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 
                 Spacer()
             }
             .padding(20)
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(AppTheme.surface)
             
             // Program Tabs
             ScrollView(.horizontal, showsIndicators: false) {
@@ -42,9 +43,10 @@ struct UykusuzTosbaView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
             }
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+            .background(AppTheme.surface.opacity(0.6))
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Subprogram Content
             ScrollView {
@@ -71,7 +73,7 @@ struct UykusuzTosbaView: View {
                 .padding(24)
             }
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(AppTheme.bg)
     }
     
     private func subProgramTab(id: String, title: String, icon: String) -> some View {
@@ -85,8 +87,12 @@ struct UykusuzTosbaView: View {
             .font(.callout.weight(selectedSubProgram == id ? .semibold : .regular))
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(selectedSubProgram == id ? Color.accentColor : Color(NSColor.controlBackgroundColor))
-            .foregroundColor(selectedSubProgram == id ? .white : .primary)
+            .background(selectedSubProgram == id ? AppTheme.accentCyan : AppTheme.surfaceElevated)
+            .foregroundColor(selectedSubProgram == id ? .black : AppTheme.textPrimary)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(selectedSubProgram == id ? AppTheme.accentCyan : AppTheme.border, lineWidth: 1)
+            )
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
@@ -105,33 +111,38 @@ struct HaftalikProgramCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.purple.opacity(0.15))
+                        .fill(AppTheme.accentPurple.opacity(0.18))
                         .frame(width: 50, height: 50)
                     Image(systemName: "calendar.badge.clock")
                         .font(.system(size: 24))
-                        .foregroundColor(.purple)
+                        .foregroundColor(AppTheme.accentPurple)
                 }
+                .corvusGlow(color: AppTheme.accentPurple, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Haftalık Program Duyuru Sihirbazı")
                         .font(.title3.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("Süper Lig çerçeve ve arka planlarını yükler, After Effects ile Haftalik_Program_Duyurusu.mp4 render eder ve SEO dosyası üretir.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Parameters
             VStack(alignment: .leading, spacing: 14) {
                 Text("Parametreler")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Yayın Saati (HH:MM)")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         
                         TextField("21:00", text: $broadcastHour)
                             .textFieldStyle(.roundedBorder)
@@ -141,6 +152,7 @@ struct HaftalikProgramCard: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Otomasyon Seçenekleri")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         
                         HStack(spacing: 16) {
                             Toggle("After Effects Render Başlat", isOn: $runRender)
@@ -168,11 +180,7 @@ struct HaftalikProgramCard: View {
                 .disabled(manager.isRunningTask)
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 24, radius: 16)
     }
 }
 
@@ -190,33 +198,41 @@ struct CanliMacProgramCard: View {
     @State private var runRender: Bool = true
     @State private var runThumbnail: Bool = true
     
+    var themeAccent: Color {
+        isMacSonu ? AppTheme.accentCyan : AppTheme.accentGreen
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill((isMacSonu ? Color.teal : Color.green).opacity(0.15))
+                        .fill(themeAccent.opacity(0.18))
                         .frame(width: 50, height: 50)
                     Image(systemName: isMacSonu ? "sportscourt.fill" : "tv.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(isMacSonu ? .teal : .green)
+                        .foregroundColor(themeAccent)
                 }
+                .corvusGlow(color: themeAccent, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(isMacSonu ? "Maç Sonu Sohbeti" : "Canlı Maç Sohbetleri")
                         .font(.title3.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("API-Sports üzerinden karşılaşma verilerini ve logoları çeker, optik ağırlık hesaplar ve AE duyuru videosu üretir.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Step 1: Date & League
             VStack(alignment: .leading, spacing: 12) {
                 Text("1. Tarih ve Turnuva Seçimi")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 
                 HStack(spacing: 14) {
                     TextField("YYYY-MM-DD (Örn: 2026-10-30)", text: $matchDate)
@@ -255,6 +271,7 @@ struct CanliMacProgramCard: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("2. Karşılaşma Seçin (\(matches.count) Maç Bulundu)")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     ScrollView {
                         VStack(spacing: 8) {
@@ -272,11 +289,12 @@ struct CanliMacProgramCard: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("3. Seçilen Karşılaşma ve Ayarlar")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     HStack(spacing: 16) {
                         Text("\(sel.home) vs \(sel.away) (\(sel.leagueName))")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.accentColor)
+                            .foregroundColor(themeAccent)
                         
                         TextField("Yayın Saati", text: $broadcastHour)
                             .textFieldStyle(.roundedBorder)
@@ -312,11 +330,7 @@ struct CanliMacProgramCard: View {
                 }
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 24, radius: 16)
         .onAppear {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
@@ -334,36 +348,43 @@ struct CanliMacProgramCard: View {
             HStack(spacing: 14) {
                 Text(m.timeStr)
                     .font(.caption.weight(.bold))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.textMuted)
                     .frame(width: 48, alignment: .leading)
                 
                 HStack(spacing: 8) {
                     Text(m.home)
                         .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("vs")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                     Text(m.away)
                         .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.textPrimary)
                 }
                 
                 Spacer()
                 
                 Text(m.leagueName)
                     .font(.caption)
+                    .foregroundColor(AppTheme.textSecondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
-                    .background(Color.primary.opacity(0.06))
+                    .background(AppTheme.surfaceElevated)
                     .clipShape(Capsule())
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(themeAccent)
                 }
             }
             .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(NSColor.windowBackgroundColor).opacity(0.6))
+                    .fill(isSelected ? themeAccent.opacity(0.18) : AppTheme.surfaceElevated)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? themeAccent : AppTheme.borderSubtle, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -401,17 +422,19 @@ struct CanliMacProgramCard: View {
             proc.waitUntilExit()
             
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let str = String(data: data, encoding: .utf8),
-               let start = str.firstIndex(of: "["),
-               let end = str.lastIndex(of: "]") {
-                let jsonStr = String(str[start...end])
-                if let jsonData = jsonStr.data(using: .utf8),
-                   let decoded = try? JSONDecoder().decode([MatchItem].self, from: jsonData) {
-                    DispatchQueue.main.async {
-                        self.matches = decoded
-                        self.isLoadingMatches = false
+            if let rawString = String(data: data, encoding: .utf8) {
+                if let openBracket = rawString.firstIndex(of: "["),
+                   let closeBracket = rawString.lastIndex(of: "]"),
+                   openBracket <= closeBracket {
+                    let jsonSub = String(rawString[openBracket...closeBracket])
+                    if let jsonData = jsonSub.data(using: .utf8),
+                       let parsed = try? JSONDecoder().decode([MatchItem].self, from: jsonData) {
+                        DispatchQueue.main.async {
+                            self.matches = parsed
+                            self.isLoadingMatches = false
+                        }
+                        return
                     }
-                    return
                 }
             }
             
@@ -422,7 +445,7 @@ struct CanliMacProgramCard: View {
     }
 }
 
-// MARK: - 4. Canlı Thumb Standalone Card
+// MARK: - 4. Canlı Maç Standalone Thumbnail Card
 struct CanliThumbStandaloneCard: View {
     @ObservedObject var manager = CorvusManager.shared
     @State private var matchId: String = ""
@@ -433,36 +456,44 @@ struct CanliThumbStandaloneCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.orange.opacity(0.15))
+                        .fill(AppTheme.accentCyan.opacity(0.18))
                         .frame(width: 50, height: 50)
                     Image(systemName: "photo.stack")
                         .font(.system(size: 24))
-                        .foregroundColor(.orange)
+                        .foregroundColor(AppTheme.accentCyan)
                 }
+                .corvusGlow(color: AppTheme.accentCyan, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Canlı Maç Thumbnail Sihirbazı (Photoshop)")
+                    Text("Canlı Maç Thumbnail Stüdyosu (Hızlı Üretim)")
                         .font(.title3.weight(.bold))
-                    Text("canlimac.psd şablonunu açar, turnuva katmanını açar ve logoları optik ağırlıklarına göre Smart Object içine yerleştirir.")
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text("Sadece Photoshop PSD şablonuna logo ve isimleri yerleştirip PNG çıktı üretir, AE render yapmaz.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Parametreler")
-                    .font(.headline)
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Maç ID (API-Sports)")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(AppTheme.textSecondary)
+                    TextField("Örn: 123456", text: $matchId)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 140)
+                }
                 
-                HStack(spacing: 16) {
-                    TextField("Tarih (YYYY-MM-DD)", text: $matchDate)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Tarih (YYYY-MM-DD)")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(AppTheme.textSecondary)
+                    TextField("2026-10-30", text: $matchDate)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 160)
-                    
-                    TextField("Maç ID (API-Sports)", text: $matchId)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 180)
                 }
             }
             
@@ -480,11 +511,7 @@ struct CanliThumbStandaloneCard: View {
                 .disabled(matchId.isEmpty || manager.isRunningTask)
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 24, radius: 16)
         .onAppear {
             let f = DateFormatter()
             f.dateFormat = "yyyy-MM-dd"
@@ -506,29 +533,33 @@ struct TekMacCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.blue.opacity(0.15))
+                        .fill(AppTheme.accentBlue.opacity(0.18))
                         .frame(width: 50, height: 50)
                     Image(systemName: "ticket.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(.blue)
+                        .foregroundColor(AppTheme.accentBlue)
                 }
+                .corvusGlow(color: AppTheme.accentBlue, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Tek Maçtan Yatanlar Duyuru Otomasyonu")
                         .font(.title3.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("tmy.json dosyasını günceller, rastgele tmyGorsel seçer, hashtag'leri üretir ve After Effects tmySahne render eder.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Yayın Saati")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         TextField("21:00", text: $broadcastHour)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 120)
@@ -537,12 +568,14 @@ struct TekMacCard: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Kayhan Durumu")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         Toggle("Kayhan Var (Hashtag #kayhan)", isOn: $kayhanVar)
                     }
                     
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Render")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         Toggle("AE Render Başlat", isOn: $runRender)
                     }
                 }
@@ -550,6 +583,7 @@ struct TekMacCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Bahsedilecek Takım Etiketleri (Virgülle ayırın)")
                         .font(.subheadline.weight(.medium))
+                        .foregroundColor(AppTheme.textSecondary)
                     TextField("Fenerbahçe, Galatasaray, Trabzonspor", text: $teamTags)
                         .textFieldStyle(.roundedBorder)
                 }
@@ -575,11 +609,7 @@ struct TekMacCard: View {
                 .disabled(manager.isRunningTask)
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 24, radius: 16)
     }
 }
 
@@ -596,27 +626,31 @@ struct FcKariyerCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.indigo.opacity(0.15))
+                        .fill(AppTheme.accentPurple.opacity(0.18))
                         .frame(width: 50, height: 50)
                     Image(systemName: "gamecontroller.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(.indigo)
+                        .foregroundColor(AppTheme.accentPurple)
                 }
+                .corvusGlow(color: AppTheme.accentPurple, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("FC27 Kariyer Duyuru Otomasyonu")
                         .font(.title3.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("kariyer_takim.json üzerinden takım logosunu indirip 203x195 boyutlandırır ve fc27sahne After Effects renderını yürütür.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             VStack(alignment: .leading, spacing: 14) {
                 Text("Kariyer Takımı")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 
                 HStack(spacing: 12) {
                     TextField("Takım Adı (Örn: Feyenoord)", text: $teamName)
@@ -630,7 +664,7 @@ struct FcKariyerCard: View {
                 HStack(spacing: 8) {
                     Text("Öneriler:")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                     
                     ForEach(popularTeams, id: \.self) { t in
                         Button {
@@ -640,8 +674,11 @@ struct FcKariyerCard: View {
                                 .font(.caption.weight(.medium))
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(teamName == t ? Color.accentColor : Color.primary.opacity(0.06))
-                                .foregroundColor(teamName == t ? .white : .primary)
+                                .background(teamName == t ? AppTheme.accentPurple : AppTheme.surfaceElevated)
+                                .foregroundColor(teamName == t ? .white : AppTheme.textPrimary)
+                                .overlay(
+                                    Capsule().stroke(teamName == t ? AppTheme.accentPurple : AppTheme.border, lineWidth: 1)
+                                )
                                 .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
@@ -664,11 +701,7 @@ struct FcKariyerCard: View {
                 .disabled(teamName.trimmingCharacters(in: .whitespaces).isEmpty || manager.isRunningTask)
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 24, radius: 16)
     }
 }
 
@@ -680,33 +713,36 @@ struct TosbaLojistikCard: View {
         VStack(spacing: 24) {
             ZStack {
                 Circle()
-                    .fill(Color.teal.opacity(0.12))
+                    .fill(AppTheme.accentCyan.opacity(0.12))
                     .frame(width: 80, height: 80)
                 Image(systemName: "truck.box.fill")
                     .font(.system(size: 38))
-                    .foregroundColor(.teal)
+                    .foregroundColor(AppTheme.accentCyan)
             }
+            .corvusGlow(color: AppTheme.accentCyan, radius: 10, opacity: 0.2)
             
             VStack(spacing: 8) {
                 Text("Tosba Lojistik Otomasyonu")
                     .font(.title2.weight(.bold))
+                    .foregroundColor(AppTheme.textPrimary)
                 Text("Euro Truck Simulator 2 ve ortak konvoy yayınları için yakında eklenecektir.")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.textSecondary)
             }
             
             Text("Geliştirme Aşamasında")
                 .font(.caption.weight(.semibold))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.secondary.opacity(0.1))
+                .background(AppTheme.surfaceElevated)
+                .foregroundColor(AppTheme.textMuted)
+                .overlay(
+                    Capsule().stroke(AppTheme.border, lineWidth: 1)
+                )
                 .clipShape(Capsule())
         }
         .frame(maxWidth: .infinity)
         .padding(40)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 40, radius: 16)
     }
 }

@@ -26,15 +26,39 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Ayarlar ve Entegrasyonlar")
                         .font(.system(size: 26, weight: .bold))
-                    Text("Kullanıcı profili, çekirdek deposu, dosya yolları ve harici araç durumları")
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text("Görünüm teması, kullanıcı profili, çekirdek deposu, dosya yolları ve harici araç durumları")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 
-                // Active User Card
+                // MARK: - Dark Mode Theme Selection Card
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Görünüm ve Tema (Dark Mode)")
+                                .font(.headline)
+                                .foregroundColor(AppTheme.textPrimary)
+                            Text("Stüdyo için optimize edilmiş karanlık mod renk paletini belirleyin")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.textMuted)
+                        }
+                        Spacer()
+                    }
+                    
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(AppThemeMode.allCases) { mode in
+                            themeSelectionCard(mode)
+                        }
+                    }
+                }
+                .corvusCard(padding: 20, radius: 16)
+                
+                // MARK: - Active User Card
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Aktif Kullanıcı Profili")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     HStack(spacing: 16) {
                         userSelectionCard(.ufuk)
@@ -43,23 +67,20 @@ struct SettingsView: View {
                     
                     Text("💡 Profil seçimi bildirim rotalarını, sohbet renginizi ve takvim güncellemelerini belirler.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                 }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                )
+                .corvusCard(padding: 20, radius: 16)
                 
-                // Git Submodule (Corvus Engine) Sync Card
+                // MARK: - Git Submodule (Corvus Engine) Sync Card
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Corvus CLI Çekirdeği (Git Submodule)")
                                 .font(.headline)
+                                .foregroundColor(AppTheme.textPrimary)
                             Text("Bağlı Depo: github.com/ufukcelen/Corvus")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.textMuted)
                         }
                         
                         Spacer()
@@ -67,33 +88,41 @@ struct SettingsView: View {
                         if isSubmoduleActive {
                             Label("Alt Modül Aktif", systemImage: "checkmark.seal.fill")
                                 .font(.caption.weight(.semibold))
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.accentGreen)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
-                                .background(Color.green.opacity(0.12))
+                                .background(AppTheme.accentGreen.opacity(0.15))
+                                .overlay(
+                                    Capsule().stroke(AppTheme.accentGreen.opacity(0.3), lineWidth: 1)
+                                )
                                 .clipShape(Capsule())
                         } else {
                             Label("Özel Klasör", systemImage: "folder.fill")
                                 .font(.caption.weight(.semibold))
-                                .foregroundColor(.orange)
+                                .foregroundColor(AppTheme.accentOrange)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
-                                .background(Color.orange.opacity(0.12))
+                                .background(AppTheme.accentOrange.opacity(0.15))
+                                .overlay(
+                                    Capsule().stroke(AppTheme.accentOrange.opacity(0.3), lineWidth: 1)
+                                )
                                 .clipShape(Capsule())
                         }
                     }
                     
                     Divider()
+                        .overlay(AppTheme.border)
                     
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("CLI motorunda yapılan güncellemeleri tek tıkla buraya çekebilirsiniz:")
                                 .font(.subheadline)
+                                .foregroundColor(AppTheme.textSecondary)
                             
                             if let status = manager.submoduleUpdateStatus {
                                 Text(status)
                                     .font(.caption.weight(.medium))
-                                    .foregroundColor(status.contains("❌") ? .red : .green)
+                                    .foregroundColor(status.contains("✗") ? AppTheme.accentRose : AppTheme.accentGreen)
                             }
                         }
                         
@@ -116,20 +145,18 @@ struct SettingsView: View {
                         .disabled(manager.isUpdatingSubmodule)
                     }
                 }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                )
+                .corvusCard(padding: 20, radius: 16)
                 
-                // Paths Configuration Card
+                // MARK: - Paths Configuration Card
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Dosya ve Komut Satırı Yolları")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Corvus Proje Dizini")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         
                         HStack {
                             TextField("Dizin Yolu", text: $projectPathInput)
@@ -144,6 +171,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Python3 Yolu (requests, rich, pillow yüklü olmalı)")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         
                         TextField("/opt/homebrew/bin/python3", text: $pythonPathInput)
                             .textFieldStyle(.roundedBorder)
@@ -153,7 +181,7 @@ struct SettingsView: View {
                         if let s = saveStatus {
                             Text(s)
                                 .font(.caption.weight(.medium))
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.accentGreen)
                         }
                         
                         Spacer()
@@ -174,16 +202,13 @@ struct SettingsView: View {
                         .buttonStyle(.borderedProminent)
                     }
                 }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                )
+                .corvusCard(padding: 20, radius: 16)
                 
-                // Adobe & API Integrations Status
+                // MARK: - Adobe & API Integrations Status
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Harici Entegrasyon Durumları")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     VStack(spacing: 10) {
                         integrationRow(
@@ -205,16 +230,13 @@ struct SettingsView: View {
                         )
                     }
                 }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                )
+                .corvusCard(padding: 20, radius: 16)
                 
-                // About & Changelog
+                // MARK: - About & Changelog
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Uygulama Bilgileri")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     HStack(spacing: 16) {
                         Image("CorvusLogo")
@@ -226,9 +248,10 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Corvus Mac v0.1.0 (CLI v1.5.0 Çekirdeği)")
                                 .font(.subheadline.weight(.bold))
+                                .foregroundColor(AppTheme.textPrimary)
                             Text("Geliştiriciler: Ufuk Çelen & Mustafa Yiğit Kızılel")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.textMuted)
                         }
                         
                         Spacer()
@@ -241,15 +264,11 @@ struct SettingsView: View {
                         .buttonStyle(.bordered)
                     }
                 }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                )
+                .corvusCard(padding: 20, radius: 16)
             }
             .padding(24)
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(AppTheme.bg)
         .onAppear {
             projectPathInput = manager.corvusProjectPath
             pythonPathInput = manager.pythonExecutablePath
@@ -257,6 +276,56 @@ struct SettingsView: View {
         .sheet(isPresented: $showChangelog) {
             ChangelogSheet()
         }
+    }
+    
+    // MARK: - Theme Selection Card
+    private func themeSelectionCard(_ mode: AppThemeMode) -> some View {
+        let isSelected = manager.appThemeMode == mode
+        return Button {
+            manager.appThemeMode = mode
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? AppTheme.accentCyan.opacity(0.2) : AppTheme.surfaceElevated)
+                        .frame(width: 36, height: 36)
+                    Image(systemName: mode.icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(isSelected ? AppTheme.accentCyan : AppTheme.textSecondary)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(mode.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    
+                    Text(mode == .obsidian ? "Modern Koyu Gri & Cam" :
+                         mode == .oled ? "Saf Siyah & Maksimum Kontrast" :
+                         mode == .midnight ? "Derin Uzay Mavisi Tonları" : "macOS Temasını Takip Et")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.textMuted)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(AppTheme.accentCyan)
+                        .font(.title3)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? AppTheme.accentCyan.opacity(0.1) : AppTheme.surfaceElevated)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? AppTheme.accentCyan : AppTheme.border, lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
     
     private func userSelectionCard(_ u: CorvusUser) -> some View {
@@ -272,27 +341,27 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(u.name)
                         .font(.headline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppTheme.textPrimary)
                     Text(u == .ufuk ? "1. Kullanıcı" : "2. Kullanıcı")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                 }
                 
                 Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(u.themeColor)
                 }
             }
             .padding(14)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? u.themeColor.opacity(0.12) : Color(NSColor.windowBackgroundColor))
+                    .fill(isSelected ? u.themeColor.opacity(0.12) : AppTheme.surfaceElevated)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? u.themeColor : Color.primary.opacity(0.06), lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? u.themeColor : AppTheme.border, lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -301,14 +370,15 @@ struct SettingsView: View {
     private func integrationRow(name: String, detail: String, isOk: Bool) -> some View {
         HStack(spacing: 12) {
             Image(systemName: isOk ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                .foregroundColor(isOk ? .green : .orange)
+                .foregroundColor(isOk ? AppTheme.accentGreen : AppTheme.accentOrange)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
                     .font(.subheadline.weight(.medium))
+                    .foregroundColor(AppTheme.textPrimary)
                 Text(detail)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.textSecondary)
             }
             
             Spacer()
@@ -316,7 +386,11 @@ struct SettingsView: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color(NSColor.windowBackgroundColor))
+                .fill(AppTheme.surfaceElevated)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(AppTheme.borderSubtle, lineWidth: 1)
+                )
         )
     }
     
@@ -339,6 +413,7 @@ struct ChangelogSheet: View {
     
     let changelogs: [(version: String, date: String, items: [String])] = [
         ("v1.5.0", "Ekim 2026", [
+            "Şık Dark Mode stüdyo teması (Obsidian, OLED, Space) eklendi.",
             "Corvus Mac Native SwiftUI uygulaması entegre edildi.",
             "Canlı Maç ve Haftalık Program Photoshop thumbnail sihirbazları tamamlandı.",
             "Firebase RTDB Takvim ve Sohbet senkronizasyonu gerçek zamanlı hale getirildi.",
@@ -362,18 +437,20 @@ struct ChangelogSheet: View {
             HStack {
                 Text("Corvus Sürüm Notları")
                     .font(.title2.weight(.bold))
+                    .foregroundColor(AppTheme.textPrimary)
                 Spacer()
                 Button {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                         .font(.title3)
                 }
                 .buttonStyle(.plain)
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -382,18 +459,20 @@ struct ChangelogSheet: View {
                             HStack {
                                 Text(entry.version)
                                     .font(.headline)
+                                    .foregroundColor(AppTheme.textPrimary)
                                 Text("(\(entry.date))")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(AppTheme.textMuted)
                             }
                             
                             VStack(alignment: .leading, spacing: 4) {
                                 ForEach(entry.items, id: \.self) { it in
                                     HStack(alignment: .top, spacing: 6) {
                                         Text("•")
-                                            .foregroundColor(.accentColor)
+                                            .foregroundColor(AppTheme.accentCyan)
                                         Text(it)
                                             .font(.subheadline)
+                                            .foregroundColor(AppTheme.textSecondary)
                                     }
                                 }
                             }
@@ -402,7 +481,11 @@ struct ChangelogSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(Color(NSColor.controlBackgroundColor))
+                                .fill(AppTheme.surfaceElevated)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(AppTheme.borderSubtle, lineWidth: 1)
+                                )
                         )
                     }
                 }
@@ -410,5 +493,6 @@ struct ChangelogSheet: View {
         }
         .padding(24)
         .frame(width: 540, height: 480)
+        .background(AppTheme.bg)
     }
 }

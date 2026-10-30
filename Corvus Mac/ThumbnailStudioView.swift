@@ -21,19 +21,21 @@ struct ThumbnailStudioView: View {
                 HStack(spacing: 16) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.indigo.opacity(0.15))
+                            .fill(AppTheme.accentPurple.opacity(0.18))
                             .frame(width: 52, height: 52)
                         Image(systemName: "paintpalette.fill")
                             .font(.system(size: 26))
-                            .foregroundColor(.indigo)
+                            .foregroundColor(AppTheme.accentPurple)
                     }
+                    .corvusGlow(color: AppTheme.accentPurple, radius: 8, opacity: 0.25)
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Photoshop Thumbnail Merkezi")
                             .font(.title2.weight(.bold))
+                            .foregroundColor(AppTheme.textPrimary)
                         Text("Adobe Photoshop JSX otomasyonu ile YouTube kapak görselleri (Thumbnail) üretimi.")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textSecondary)
                     }
                     
                     Spacer()
@@ -41,22 +43,23 @@ struct ThumbnailStudioView: View {
                     // Photoshop Status Badge
                     HStack(spacing: 8) {
                         Circle()
-                            .fill(manager.photoshopFound ? Color.green : Color.red)
+                            .fill(manager.photoshopFound ? AppTheme.accentGreen : AppTheme.accentRose)
                             .frame(width: 8, height: 8)
+                            .corvusGlow(color: manager.photoshopFound ? AppTheme.accentGreen : AppTheme.accentRose, radius: 4)
                         
                         Text(manager.photoshopFound ? manager.photoshopAppName : "Photoshop Bulunamadı")
                             .font(.caption.weight(.semibold))
+                            .foregroundColor(AppTheme.textPrimary)
                     }
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(AppTheme.surfaceElevated)
+                    .overlay(
+                        Capsule().stroke(AppTheme.border, lineWidth: 1)
+                    )
                     .clipShape(Capsule())
                 }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                )
+                .corvusCard(padding: 20, radius: 16)
                 
                 // Templates Grid (3 templates from corvus.py)
                 VStack(spacing: 20) {
@@ -66,7 +69,7 @@ struct ThumbnailStudioView: View {
                         templateName: "memleketYatay.psd",
                         outputName: "memleket{no}.jpg",
                         icon: "waveform",
-                        color: .orange,
+                        color: AppTheme.accentOrange,
                         description: "Kapak görselinde bölüm numarasını (#..) günceller ve renk1 / renk2 katmanlarına rastgele Hue uygulayarak dinamik renk kombinasyonu üretir."
                     ) {
                         HStack(spacing: 12) {
@@ -91,7 +94,7 @@ struct ThumbnailStudioView: View {
                         templateName: "canlimac.psd",
                         outputName: "canlimacyatay.jpg",
                         icon: "tv.fill",
-                        color: .green,
+                        color: AppTheme.accentGreen,
                         description: "Lig/turnuva katmanını (superlig, cl, europa, conf, uluslar) seçer, takımların logolarını optik ağırlıklarına (225px vs 280px) göre Smart Object içine yerleştirir."
                     ) {
                         HStack(spacing: 12) {
@@ -120,7 +123,7 @@ struct ThumbnailStudioView: View {
                         templateName: "haftalık.psd",
                         outputName: "haftalik_program.jpg",
                         icon: "calendar.badge.clock",
-                        color: .purple,
+                        color: AppTheme.accentPurple,
                         description: "haftalık.psd dosyasını Photoshop ile açar ve hiçbir katmanı bozmadan maksimum 12 kalitesinde Masaüstüne kaydeder."
                     ) {
                         Button {
@@ -135,7 +138,7 @@ struct ThumbnailStudioView: View {
             }
             .padding(24)
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(AppTheme.bg)
         .onAppear {
             let f = DateFormatter()
             f.dateFormat = "yyyy-MM-dd"
@@ -156,25 +159,27 @@ struct ThumbnailStudioView: View {
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(color.opacity(0.15))
+                        .fill(color.opacity(0.18))
                         .frame(width: 40, height: 40)
                     Image(systemName: icon)
                         .font(.system(size: 20))
                         .foregroundColor(color)
                 }
+                .corvusGlow(color: color, radius: 4, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     HStack(spacing: 8) {
                         Text("Şablon: \(templateName)")
                             .font(.caption2.weight(.medium))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                         Text("•")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                         Text("Çıktı: ~/Desktop/\(outputName)")
                             .font(.caption2.weight(.medium))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                     }
                 }
                 
@@ -183,16 +188,13 @@ struct ThumbnailStudioView: View {
             
             Text(description)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.textSecondary)
             
             Divider()
+                .overlay(AppTheme.border)
             
             controls()
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 20, radius: 14)
     }
 }

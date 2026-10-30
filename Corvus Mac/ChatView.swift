@@ -19,6 +19,7 @@ struct ChatView: View {
             chatHeader
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Messages Scroll
             ScrollViewReader { proxy in
@@ -31,6 +32,7 @@ struct ChatView: View {
                     }
                     .padding(20)
                 }
+                .background(AppTheme.bg)
                 .onChange(of: manager.chatMessages.count) { _, _ in
                     if let lastId = manager.chatMessages.last?.id {
                         withAnimation(.easeOut(duration: 0.2)) {
@@ -44,14 +46,14 @@ struct ChatView: View {
                     }
                 }
             }
-            .background(Color(NSColor.textBackgroundColor).opacity(0.3))
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Input bar
             chatInputBar
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(AppTheme.bg)
         .confirmationDialog("Sohbeti temizlemek istediğine emin misin?", isPresented: $showClearConfirmation) {
             Button("Evet, Sohbeti Temizle", role: .destructive) {
                 Task { await manager.clearChat() }
@@ -67,26 +69,29 @@ struct ChatView: View {
         HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(manager.currentUser.themeColor.opacity(0.15))
+                    .fill(manager.currentUser.themeColor.opacity(0.18))
                     .frame(width: 42, height: 42)
                 Image(systemName: "bubble.left.and.bubble.right.fill")
                     .foregroundColor(manager.currentUser.themeColor)
                     .font(.system(size: 18))
             }
+            .corvusGlow(color: manager.currentUser.themeColor, radius: 6, opacity: 0.25)
             
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
                     Text("Canlı Ekip Sohbeti")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     Circle()
-                        .fill(Color.green)
+                        .fill(AppTheme.accentGreen)
                         .frame(width: 8, height: 8)
+                        .corvusGlow(color: AppTheme.accentGreen, radius: 4)
                 }
                 
                 Text("Ufuk Çelen & Mustafa Yiğit Kızılel & Cem Yıldırım")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.textMuted)
             }
             
             Spacer()
@@ -95,14 +100,17 @@ struct ChatView: View {
             HStack(spacing: 6) {
                 Text("Mesaj atan:")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.textMuted)
                 
                 Text(manager.currentUser.name)
                     .font(.caption.weight(.bold))
                     .foregroundColor(manager.currentUser.themeColor)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(manager.currentUser.themeColor.opacity(0.12))
+                    .background(manager.currentUser.themeColor.opacity(0.15))
+                    .overlay(
+                        Capsule().stroke(manager.currentUser.themeColor.opacity(0.3), lineWidth: 1)
+                    )
                     .clipShape(Capsule())
             }
             
@@ -122,11 +130,12 @@ struct ChatView: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.title3)
+                    .foregroundColor(AppTheme.textSecondary)
             }
             .menuStyle(.borderlessButton)
         }
         .padding(16)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(AppTheme.surface)
     }
     
     // MARK: - Message Bubble
@@ -145,23 +154,24 @@ struct ChatView: View {
                 
                 Text(msg.content)
                     .font(.body)
-                    .foregroundColor(isMe ? .white : .primary)
+                    .foregroundColor(isMe ? .white : AppTheme.textPrimary)
                     .textSelection(.enabled)
                 
                 Text(msg.timestamp, style: .time)
                     .font(.system(size: 10))
-                    .foregroundColor(isMe ? .white.opacity(0.7) : .secondary)
+                    .foregroundColor(isMe ? .white.opacity(0.7) : AppTheme.textMuted)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isMe ? AnyShapeStyle(manager.currentUser.themeColor.gradient) : AnyShapeStyle(Color(NSColor.controlBackgroundColor)))
+                    .fill(isMe ? AnyShapeStyle(manager.currentUser.themeColor.gradient) : AnyShapeStyle(AppTheme.surfaceElevated))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(isMe ? Color.clear : Color.primary.opacity(0.06), lineWidth: 1)
+                    .stroke(isMe ? Color.clear : AppTheme.border, lineWidth: 1)
             )
+            .corvusGlow(color: isMe ? manager.currentUser.themeColor : Color.clear, radius: 4, opacity: 0.15)
             
             if !isMe { Spacer(minLength: 60) }
         }
@@ -187,7 +197,7 @@ struct ChatView: View {
             .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty)
         }
         .padding(16)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(AppTheme.surface)
     }
     
     private func submitMessage() {

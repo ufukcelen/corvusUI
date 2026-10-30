@@ -27,6 +27,13 @@ final class CorvusManager: ObservableObject {
         }
     }
     
+    // Theme Mode
+    @Published var appThemeMode: AppThemeMode {
+        didSet {
+            UserDefaults.standard.set(appThemeMode.rawValue, forKey: "CorvusAppThemeMode")
+        }
+    }
+    
     @Published var calendarItems: [CalendarItem] = []
     @Published var chatMessages: [ChatMessage] = []
     @Published var isSyncing: Bool = false
@@ -76,6 +83,10 @@ final class CorvusManager: ObservableObject {
         // Load user
         let savedUser = UserDefaults.standard.string(forKey: "CorvusActiveUserId") ?? "1"
         self.currentUser = CorvusUser(rawValue: savedUser) ?? .ufuk
+        
+        // Load theme
+        let savedTheme = UserDefaults.standard.string(forKey: "CorvusAppThemeMode") ?? "obsidian"
+        self.appThemeMode = AppThemeMode(rawValue: savedTheme) ?? .obsidian
         
         // Load project path with smart discovery (Submodule > Dev Folder > Saved)
         self.corvusProjectPath = Self.detectBestProjectPath()
@@ -159,14 +170,14 @@ final class CorvusManager: ObservableObject {
                         }
                         self.consoleLogs.append(ProcessLogItem(text: "[Git Submodule Sync] " + output.trimmingCharacters(in: .whitespacesAndNewlines), isError: false, isProgress: false))
                     } else {
-                        self.submoduleUpdateStatus = "❌ Güncelleme başarısız: \(output)"
+                        self.submoduleUpdateStatus = "✗ Güncelleme başarısız: \(output)"
                     }
                     self.checkSystemHealth()
                 }
             } catch {
                 await MainActor.run {
                     self.isUpdatingSubmodule = false
-                    self.submoduleUpdateStatus = "❌ Hata: \(error.localizedDescription)"
+                    self.submoduleUpdateStatus = "✗ Hata: \(error.localizedDescription)"
                 }
             }
         }
@@ -655,7 +666,7 @@ final class CorvusManager: ObservableObject {
                     self.consoleLogs.append(ProcessLogItem(text: "✓ [BAŞARILI] İşlem tamamlandı (Kod 0).", isError: false, isProgress: false))
                     NSSound(named: "Glass")?.play()
                 } else {
-                    self.consoleLogs.append(ProcessLogItem(text: "❌ [HATA] İşlem sonlandı (Çıkış Kodu: \(code)).", isError: true, isProgress: false))
+                    self.consoleLogs.append(ProcessLogItem(text: "✗ [HATA] İşlem sonlandı (Çıkış Kodu: \(code)).", isError: true, isProgress: false))
                 }
                 self.activeProcess = nil
                 self.currentTaskTitle = nil
@@ -670,7 +681,7 @@ final class CorvusManager: ObservableObject {
         } catch {
             isRunningTask = false
             currentTaskTitle = nil
-            consoleLogs.append(ProcessLogItem(text: "❌ Süreç başlatılamadı: \(error.localizedDescription)", isError: true, isProgress: false))
+            consoleLogs.append(ProcessLogItem(text: "✗ Süreç başlatılamadı: \(error.localizedDescription)", isError: true, isProgress: false))
         }
     }
     

@@ -34,18 +34,22 @@ struct CalendarView: View {
                     HStack(spacing: 8) {
                         Text("Gelecek Yayınlar & Takvim")
                             .font(.title2.weight(.bold))
+                            .foregroundColor(AppTheme.textPrimary)
                         
                         Text("\(manager.calendarItems.count) Yayın")
                             .font(.caption.weight(.semibold))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(Color.accentColor.opacity(0.15))
-                            .foregroundColor(.accentColor)
+                            .background(AppTheme.accentCyan.opacity(0.15))
+                            .foregroundColor(AppTheme.accentCyan)
+                            .overlay(
+                                Capsule().stroke(AppTheme.accentCyan.opacity(0.3), lineWidth: 1)
+                            )
                             .clipShape(Capsule())
                     }
                     Text("Firebase Realtime Database ve Ntfy ile senkronize canlı yayın takvimi.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 
                 Spacer()
@@ -85,13 +89,15 @@ struct CalendarView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .font(.title3)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 .menuStyle(.borderlessButton)
             }
             .padding(20)
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(AppTheme.surface)
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Content
             if manager.calendarItems.isEmpty {
@@ -105,9 +111,10 @@ struct CalendarView: View {
                     }
                 }
                 .listStyle(.inset)
+                .scrollContentBackground(.hidden)
             }
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(AppTheme.bg)
         .sheet(isPresented: $showAddSheet) {
             AddBroadcastSheet()
         }
@@ -127,27 +134,32 @@ struct CalendarView: View {
             // Index badge
             Text("\(item.index)")
                 .font(.callout.weight(.bold))
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.textMuted)
                 .frame(width: 28, height: 28)
-                .background(Color(NSColor.controlBackgroundColor))
+                .background(AppTheme.surfaceElevated)
+                .overlay(
+                    Circle().stroke(AppTheme.border, lineWidth: 1)
+                )
                 .clipShape(Circle())
             
             // Icon
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(programColor(for: item.title).opacity(0.15))
+                    .fill(programColor(for: item.title).opacity(0.18))
                     .frame(width: 44, height: 44)
                 
                 Image(systemName: programIcon(for: item.title))
                     .font(.system(size: 20))
                     .foregroundColor(programColor(for: item.title))
             }
+            .corvusGlow(color: programColor(for: item.title), radius: 6, opacity: 0.25)
             
             // Details
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text(item.title)
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                         .strikethrough(item.isCancelled)
                     
                     if item.isCancelled {
@@ -155,16 +167,16 @@ struct CalendarView: View {
                             .font(.caption2.weight(.heavy))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.red.opacity(0.15))
-                            .foregroundColor(.red)
+                            .background(AppTheme.accentRose.opacity(0.18))
+                            .foregroundColor(AppTheme.accentRose)
                             .clipShape(Capsule())
                     } else if item.isDone {
                         Text("DUYURULAR YAPILDI")
                             .font(.caption2.weight(.heavy))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.green.opacity(0.15))
-                            .foregroundColor(.green)
+                            .background(AppTheme.accentGreen.opacity(0.18))
+                            .foregroundColor(AppTheme.accentGreen)
                             .clipShape(Capsule())
                     }
                 }
@@ -173,19 +185,19 @@ struct CalendarView: View {
                     if !item.day.isEmpty {
                         Label(item.day, systemImage: "calendar")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                     }
                     
                     if !item.time.isEmpty {
                         Label(item.time, systemImage: "clock")
                             .font(.caption.weight(.semibold))
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppTheme.accentCyan)
                     }
                     
                     if let info = item.info, !info.isEmpty {
                         Label(info, systemImage: "info.circle")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textSecondary)
                     }
                 }
             }
@@ -202,7 +214,7 @@ struct CalendarView: View {
                         .font(.caption.weight(.medium))
                 }
                 .buttonStyle(.bordered)
-                .tint(item.isDone ? .green : .secondary)
+                .tint(item.isDone ? AppTheme.accentGreen : .secondary)
                 .help("Duyurular Yapıldı olarak işaretle")
                 
                 // Cancel toggle
@@ -213,7 +225,7 @@ struct CalendarView: View {
                         .font(.caption.weight(.medium))
                 }
                 .buttonStyle(.bordered)
-                .tint(item.isCancelled ? .orange : .red)
+                .tint(item.isCancelled ? AppTheme.accentOrange : AppTheme.accentRose)
                 .help("Yayını iptal et / geri al")
                 
                 // Delete
@@ -222,7 +234,7 @@ struct CalendarView: View {
                 } label: {
                     Image(systemName: "trash")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                 }
                 .buttonStyle(.borderless)
                 .help("Yayını sil")
@@ -231,24 +243,24 @@ struct CalendarView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
+                .fill(AppTheme.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.primary.opacity(0.04), lineWidth: 1)
+                        .stroke(AppTheme.border, lineWidth: 1)
                 )
         )
     }
     
     // MARK: - Helpers
     private func programColor(for title: String) -> Color {
-        if title.contains("Haftalık") { return .purple }
-        if title.contains("Canlı Maç") { return .green }
-        if title.contains("Maç Sonu") { return .teal }
-        if title.contains("Tek Maç") { return .blue }
-        if title.contains("FC27") { return .indigo }
-        if title.contains("Memleket") { return .orange }
-        if title.contains("Albert") { return .yellow }
-        return .cyan
+        if title.contains("Haftalık") { return AppTheme.accentPurple }
+        if title.contains("Canlı Maç") { return AppTheme.accentGreen }
+        if title.contains("Maç Sonu") { return AppTheme.accentCyan }
+        if title.contains("Tek Maç") { return AppTheme.accentBlue }
+        if title.contains("FC27") { return AppTheme.accentPurple }
+        if title.contains("Memleket") { return AppTheme.accentOrange }
+        if title.contains("Albert") { return AppTheme.accentCyan }
+        return AppTheme.accentCyan
     }
     
     private func programIcon(for title: String) -> String {
@@ -266,14 +278,15 @@ struct CalendarView: View {
         VStack(spacing: 16) {
             Image(systemName: "calendar.badge.exclamationmark")
                 .font(.system(size: 48))
-                .foregroundColor(.secondary.opacity(0.5))
+                .foregroundColor(AppTheme.textMuted.opacity(0.5))
             
             Text("Kayıtlı Yayın Bulunamadı")
                 .font(.title3.weight(.semibold))
+                .foregroundColor(AppTheme.textPrimary)
             
             Text("Yeni bir yayın ekleyerek takvimi doldurabilirsin.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.textSecondary)
             
             Button {
                 showAddSheet = true
@@ -319,23 +332,26 @@ struct AddBroadcastSheet: View {
             HStack {
                 Text("Yeni Yayın Planla")
                     .font(.title2.weight(.bold))
+                    .foregroundColor(AppTheme.textPrimary)
                 Spacer()
                 Button {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                         .font(.title3)
                 }
                 .buttonStyle(.plain)
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Program selection
             VStack(alignment: .leading, spacing: 8) {
                 Text("Program Türü")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 
                 Picker("Program", selection: $selectedProgram) {
                     ForEach(ProgramChoice.allPrograms) { p in
@@ -361,6 +377,7 @@ struct AddBroadcastSheet: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Yayın Günü (Önümüzdeki 7 Gün)")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 
                 HStack(spacing: 8) {
                     ForEach(dynamicDays, id: \.value) { item in
@@ -371,8 +388,12 @@ struct AddBroadcastSheet: View {
                                 .font(.caption.weight(selectedDay == item.value ? .bold : .regular))
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
-                                .background(selectedDay == item.value ? Color.accentColor : Color(NSColor.controlBackgroundColor))
-                                .foregroundColor(selectedDay == item.value ? .white : .primary)
+                                .background(selectedDay == item.value ? AppTheme.accentCyan : AppTheme.surfaceElevated)
+                                .foregroundColor(selectedDay == item.value ? .black : AppTheme.textPrimary)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(selectedDay == item.value ? AppTheme.accentCyan : AppTheme.border, lineWidth: 1)
+                                )
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         .buttonStyle(.plain)
@@ -384,6 +405,7 @@ struct AddBroadcastSheet: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Yayın Saati (HH:MM)")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 
                 HStack(spacing: 12) {
                     TextField("21:00", text: $timeString)
@@ -397,6 +419,7 @@ struct AddBroadcastSheet: View {
                         } label: {
                             Text(t)
                                 .font(.caption)
+                                .foregroundColor(AppTheme.textPrimary)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -408,6 +431,7 @@ struct AddBroadcastSheet: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Bilgi Notu (İsteğe bağlı)")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 
                 TextField("Örn: Derbi Özel / Konuklu Yayın", text: $infoNote)
                     .textFieldStyle(.roundedBorder)
@@ -442,6 +466,7 @@ struct AddBroadcastSheet: View {
         }
         .padding(24)
         .frame(width: 580, height: 480)
+        .background(AppTheme.bg)
         .onAppear {
             if let first = dynamicDays.first {
                 selectedDay = first.value

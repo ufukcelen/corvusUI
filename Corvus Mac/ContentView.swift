@@ -15,8 +15,10 @@ struct ContentView: View {
         NavigationSplitView {
             sidebarContent
                 .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 300)
+                .background(AppTheme.sidebarBg)
         } detail: {
             detailContent
+                .background(AppTheme.bg.ignoresSafeArea())
         }
         .frame(minWidth: 960, minHeight: 640)
         .toolbar {
@@ -27,13 +29,39 @@ struct ContentView: View {
                             .controlSize(.small)
                         Text(manager.currentTaskTitle ?? "İşlem Yürütülüyor...")
                             .font(.caption.weight(.medium))
-                            .foregroundColor(.blue)
+                            .foregroundColor(AppTheme.accentCyan)
                     }
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
+                    .background(AppTheme.accentCyan.opacity(0.12))
+                    .overlay(
+                        Capsule().stroke(AppTheme.accentCyan.opacity(0.3), lineWidth: 1)
+                    )
                     .clipShape(Capsule())
+                    .corvusGlow(color: AppTheme.accentCyan, radius: 6)
                 }
+                
+                // Theme Quick Switcher
+                Menu {
+                    Section("Karanlık Mod Temaları") {
+                        ForEach(AppThemeMode.allCases) { mode in
+                            Button {
+                                manager.appThemeMode = mode
+                            } label: {
+                                HStack {
+                                    Label(mode.title, systemImage: mode.icon)
+                                    if manager.appThemeMode == mode {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: manager.appThemeMode.icon)
+                        .foregroundColor(.primary)
+                }
+                .help("Tema Seçimi: \(manager.appThemeMode.title)")
                 
                 Button {
                     Task { await manager.syncAll() }
@@ -50,18 +78,42 @@ struct ContentView: View {
         VStack(spacing: 0) {
             // App Branding
             HStack(spacing: 12) {
-                Image("CorvusLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 32, height: 32)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(
+                            LinearGradient(
+                                colors: [AppTheme.accentCyan.opacity(0.3), AppTheme.accentPurple.opacity(0.3)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
+                    
+                    Image("CorvusLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .corvusGlow(color: AppTheme.accentCyan, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Corvus")
-                        .font(.headline.weight(.bold))
+                    HStack(spacing: 6) {
+                        Text("Corvus")
+                            .font(.headline.weight(.bold))
+                            .foregroundColor(AppTheme.textPrimary)
+                        
+                        Circle()
+                            .fill(AppTheme.accentGreen)
+                            .frame(width: 6, height: 6)
+                    }
                     Text("Otomasyon Stüdyosu")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                 }
                 Spacer()
             }
@@ -70,6 +122,7 @@ struct ContentView: View {
             .padding(.bottom, 12)
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Navigation List
             List(selection: $selectedTab) {
@@ -87,8 +140,8 @@ struct ContentView: View {
                                     .font(.caption2.weight(.bold))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(Color.accentColor.opacity(0.15))
-                                    .foregroundColor(.accentColor)
+                                    .background(AppTheme.accentCyan.opacity(0.15))
+                                    .foregroundColor(AppTheme.accentCyan)
                                     .clipShape(Capsule())
                             }
                         }
@@ -136,8 +189,9 @@ struct ContentView: View {
                             Spacer()
                             if manager.isRunningTask {
                                 Circle()
-                                    .fill(Color.blue)
+                                    .fill(AppTheme.accentCyan)
                                     .frame(width: 8, height: 8)
+                                    .corvusGlow(color: AppTheme.accentCyan, radius: 4)
                             }
                         }
                     }
@@ -150,19 +204,26 @@ struct ContentView: View {
             .listStyle(.sidebar)
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Bottom Active User Widget
             HStack(spacing: 10) {
-                Image(systemName: manager.currentUser.avatarSystemImage)
-                    .font(.title3)
-                    .foregroundColor(manager.currentUser.themeColor)
+                ZStack {
+                    Circle()
+                        .fill(manager.currentUser.themeColor.opacity(0.15))
+                        .frame(width: 32, height: 32)
+                    Image(systemName: manager.currentUser.avatarSystemImage)
+                        .font(.callout)
+                        .foregroundColor(manager.currentUser.themeColor)
+                }
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(manager.currentUser.name)
                         .font(.caption.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text(manager.currentUser == .ufuk ? "1. Kullanıcı" : "2. Kullanıcı")
                         .font(.system(size: 10))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                 }
                 
                 Spacer()
@@ -172,12 +233,22 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
+                        .padding(6)
+                        .background(AppTheme.surfaceElevated)
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .help("Kullanıcıyı \(manager.currentUser.otherUser.name) olarak değiştir")
             }
             .padding(12)
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.7))
+            .background(AppTheme.surface.opacity(0.85))
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(AppTheme.border),
+                alignment: .top
+            )
         }
     }
     

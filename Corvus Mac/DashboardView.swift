@@ -33,7 +33,7 @@ struct DashboardView: View {
             }
             .padding(24)
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(AppTheme.bg)
         .sheet(isPresented: $showAddBroadcastSheet) {
             AddBroadcastSheet()
         }
@@ -42,31 +42,51 @@ struct DashboardView: View {
     // MARK: - Header Banner
     private var headerBanner: some View {
         HStack(spacing: 16) {
-            Image("CorvusLogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .shadow(color: manager.currentUser.themeColor.opacity(0.3), radius: 8, x: 0, y: 4)
+            ZStack {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(
+                        LinearGradient(
+                            colors: [manager.currentUser.themeColor.opacity(0.35), AppTheme.accentCyan.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 58, height: 58)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    )
+                
+                Image("CorvusLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .corvusGlow(color: manager.currentUser.themeColor, radius: 10, opacity: 0.3)
             
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text("Corvus Otomasyon Stüdyosu")
                         .font(.title2.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     Text("v1.5.0")
                         .font(.caption2.weight(.heavy))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.15))
-                        .foregroundColor(.accentColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(AppTheme.accentCyan.opacity(0.15))
+                        .foregroundColor(AppTheme.accentCyan)
+                        .overlay(
+                            Capsule().stroke(AppTheme.accentCyan.opacity(0.3), lineWidth: 1)
+                        )
                         .clipShape(Capsule())
                 }
                 
                 HStack(spacing: 6) {
                     Text("Aktif Kullanıcı:")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                     
                     HStack(spacing: 4) {
                         Image(systemName: manager.currentUser.avatarSystemImage)
@@ -77,18 +97,18 @@ struct DashboardView: View {
                     .foregroundColor(manager.currentUser.themeColor)
                     
                     Text("•")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                     
                     if manager.isSyncing {
                         ProgressView()
                             .controlSize(.mini)
                         Text("Senkronize ediliyor...")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                     } else if let date = manager.lastSyncDate {
                         Text("Son eşitleme: \(date, style: .time)")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                     }
                 }
             }
@@ -115,9 +135,14 @@ struct DashboardView: View {
                     Text("Kullanıcı Değiştir")
                 }
                 .font(.callout.weight(.medium))
+                .foregroundColor(AppTheme.textPrimary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color(NSColor.controlBackgroundColor))
+                .background(AppTheme.surfaceElevated)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(AppTheme.border, lineWidth: 1)
+                )
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .menuStyle(.borderlessButton)
@@ -128,22 +153,18 @@ struct DashboardView: View {
             } label: {
                 Image(systemName: "arrow.clockwise")
                     .font(.body)
+                    .foregroundColor(AppTheme.textSecondary)
                     .padding(8)
-                    .background(Color(NSColor.controlBackgroundColor))
+                    .background(AppTheme.surfaceElevated)
+                    .overlay(
+                        Circle().stroke(AppTheme.border, lineWidth: 1)
+                    )
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
             .help("Firebase ve Ntfy'den yenile")
         }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor).opacity(0.6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                )
-        )
+        .corvusCard(padding: 18, radius: 16)
     }
     
     // MARK: - Status Grid
@@ -154,7 +175,7 @@ struct DashboardView: View {
                 subtitle: "Canlı Veritabanı",
                 icon: "externaldrive.connected.to.line.below.fill",
                 status: true,
-                color: .green
+                color: AppTheme.accentGreen
             )
             
             statusBadge(
@@ -162,7 +183,7 @@ struct DashboardView: View {
                 subtitle: manager.aerenderFound ? "aerender Hazır" : "Yüklü Değil",
                 icon: "film.fill",
                 status: manager.aerenderFound,
-                color: manager.aerenderFound ? .blue : .orange
+                color: manager.aerenderFound ? AppTheme.accentCyan : AppTheme.accentOrange
             )
             
             statusBadge(
@@ -170,7 +191,7 @@ struct DashboardView: View {
                 subtitle: manager.photoshopFound ? manager.photoshopAppName : "Yüklü Değil",
                 icon: "paintpalette.fill",
                 status: manager.photoshopFound,
-                color: manager.photoshopFound ? .indigo : .orange
+                color: manager.photoshopFound ? AppTheme.accentPurple : AppTheme.accentOrange
             )
             
             statusBadge(
@@ -178,7 +199,7 @@ struct DashboardView: View {
                 subtitle: manager.apiKeyFound ? "api.txt Aktif" : "api.txt Eksik",
                 icon: "key.fill",
                 status: manager.apiKeyFound,
-                color: manager.apiKeyFound ? .teal : .red
+                color: manager.apiKeyFound ? AppTheme.accentCyan : AppTheme.accentRose
             )
         }
     }
@@ -187,36 +208,39 @@ struct DashboardView: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(color.opacity(0.15))
+                    .fill(color.opacity(0.16))
                     .frame(width: 38, height: 38)
                 Image(systemName: icon)
                     .foregroundColor(color)
                     .font(.system(size: 16, weight: .semibold))
             }
+            .corvusGlow(color: color, radius: 4, opacity: 0.25)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppTheme.textPrimary)
                     .lineLimit(1)
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.textSecondary)
                     .lineLimit(1)
             }
             
             Spacer()
             
             Circle()
-                .fill(status ? Color.green : Color.red)
+                .fill(status ? AppTheme.accentGreen : AppTheme.accentRose)
                 .frame(width: 8, height: 8)
+                .corvusGlow(color: status ? AppTheme.accentGreen : AppTheme.accentRose, radius: 4)
         }
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(NSColor.controlBackgroundColor))
+                .fill(AppTheme.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.primary.opacity(0.04), lineWidth: 1)
+                        .stroke(AppTheme.border, lineWidth: 1)
                 )
         )
     }
@@ -226,13 +250,14 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Hızlı Başlat")
                 .font(.headline)
+                .foregroundColor(AppTheme.textPrimary)
             
             HStack(spacing: 12) {
                 quickActionButton(
                     title: "Yayın Ekle",
                     subtitle: "Takvime yeni yayın gir",
                     icon: "calendar.badge.plus",
-                    color: .blue
+                    color: AppTheme.accentBlue
                 ) {
                     showAddBroadcastSheet = true
                 }
@@ -241,7 +266,7 @@ struct DashboardView: View {
                     title: "Haftalık Program",
                     subtitle: "Render ve Thumbnail",
                     icon: "calendar.badge.clock",
-                    color: .purple
+                    color: AppTheme.accentPurple
                 ) {
                     selectedTab = "uykusuz_tosba"
                 }
@@ -250,7 +275,7 @@ struct DashboardView: View {
                     title: "Canlı Maç Sohbeti",
                     subtitle: "API maç listesi & render",
                     icon: "tv.fill",
-                    color: .green
+                    color: AppTheme.accentGreen
                 ) {
                     selectedTab = "uykusuz_tosba"
                 }
@@ -259,7 +284,7 @@ struct DashboardView: View {
                     title: "Memleket Thumbnail",
                     subtitle: "Bölüm no ve renk sihirbazı",
                     icon: "photo.on.rectangle.angled",
-                    color: .orange
+                    color: AppTheme.accentOrange
                 ) {
                     selectedTab = "photoshop"
                 }
@@ -272,33 +297,34 @@ struct DashboardView: View {
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(color.opacity(0.15))
+                        .fill(color.opacity(0.18))
                         .frame(width: 40, height: 40)
                     Image(systemName: icon)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(color)
                 }
+                .corvusGlow(color: color, radius: 4, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppTheme.textPrimary)
                     Text(subtitle)
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption2.weight(.bold))
-                    .foregroundColor(.secondary.opacity(0.5))
+                    .foregroundColor(AppTheme.textMuted)
             }
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(AppTheme.surface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.primary.opacity(0.04), lineWidth: 1)
+                            .stroke(AppTheme.border, lineWidth: 1)
                     )
             )
         }
@@ -311,13 +337,14 @@ struct DashboardView: View {
             HStack {
                 Label("Gelecek Yayınlar", systemImage: "calendar")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 Spacer()
                 Button {
                     selectedTab = "calendar"
                 } label: {
                     Text("Tümünü Gör")
                         .font(.caption.weight(.medium))
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(AppTheme.accentCyan)
                 }
                 .buttonStyle(.plain)
             }
@@ -326,10 +353,10 @@ struct DashboardView: View {
                 VStack(spacing: 10) {
                     Image(systemName: "calendar.badge.clock")
                         .font(.system(size: 32))
-                        .foregroundColor(.secondary.opacity(0.5))
+                        .foregroundColor(AppTheme.textMuted.opacity(0.6))
                     Text("Henüz planlanmış yayın yok.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                     Button {
                         showAddBroadcastSheet = true
                     } label: {
@@ -346,29 +373,30 @@ struct DashboardView: View {
                         HStack(spacing: 10) {
                             Text("\(item.index)-)")
                                 .font(.caption.weight(.bold))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.textMuted)
                                 .frame(width: 24, alignment: .leading)
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.title)
                                     .font(.subheadline.weight(.medium))
+                                    .foregroundColor(AppTheme.textPrimary)
                                     .strikethrough(item.isCancelled)
                                 
                                 HStack(spacing: 6) {
                                     if !item.day.isEmpty {
                                         Text(item.day)
                                             .font(.caption2)
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(AppTheme.textMuted)
                                     }
                                     if !item.time.isEmpty {
                                         Text("• \(item.time)")
                                             .font(.caption2.weight(.semibold))
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(AppTheme.accentCyan)
                                     }
                                     if let info = item.info {
                                         Text("(\(info))")
                                             .font(.caption2)
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(AppTheme.textSecondary)
                                     }
                                 }
                             }
@@ -380,46 +408,42 @@ struct DashboardView: View {
                                     .font(.caption2.weight(.bold))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(Color.red.opacity(0.15))
-                                    .foregroundColor(.red)
+                                    .background(AppTheme.accentRose.opacity(0.18))
+                                    .foregroundColor(AppTheme.accentRose)
                                     .clipShape(Capsule())
                             } else if item.isDone {
                                 Text("Yapıldı")
                                     .font(.caption2.weight(.bold))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(Color.green.opacity(0.15))
-                                    .foregroundColor(.green)
+                                    .background(AppTheme.accentGreen.opacity(0.18))
+                                    .foregroundColor(AppTheme.accentGreen)
                                     .clipShape(Capsule())
                             } else {
                                 Text("Planlandı")
                                     .font(.caption2.weight(.medium))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
-                                    .background(Color.blue.opacity(0.15))
-                                    .foregroundColor(.blue)
+                                    .background(AppTheme.accentBlue.opacity(0.18))
+                                    .foregroundColor(AppTheme.accentBlue)
                                     .clipShape(Capsule())
                             }
                         }
                         .padding(10)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(NSColor.windowBackgroundColor).opacity(0.6))
+                                .fill(AppTheme.surfaceElevated.opacity(0.6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(AppTheme.borderSubtle, lineWidth: 1)
+                                )
                         )
                     }
                 }
             }
         }
-        .padding(16)
+        .corvusCard(padding: 16, radius: 14)
         .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(NSColor.controlBackgroundColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.primary.opacity(0.04), lineWidth: 1)
-                )
-        )
     }
     
     // MARK: - Mini Chat Card
@@ -428,13 +452,14 @@ struct DashboardView: View {
             HStack {
                 Label("Ekip Sohbeti", systemImage: "bubble.left.and.bubble.right.fill")
                     .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
                 Spacer()
                 Button {
                     selectedTab = "chat"
                 } label: {
                     Text("Sohbete Git")
                         .font(.caption.weight(.medium))
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(AppTheme.accentCyan)
                 }
                 .buttonStyle(.plain)
             }
@@ -443,10 +468,10 @@ struct DashboardView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "bubble.left")
                         .font(.system(size: 32))
-                        .foregroundColor(.secondary.opacity(0.5))
+                        .foregroundColor(AppTheme.textMuted.opacity(0.6))
                     Text("Henüz sohbet mesajı yok.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 .frame(maxWidth: .infinity, minHeight: 140)
             } else {
@@ -464,6 +489,7 @@ struct DashboardView: View {
                                     .foregroundColor(msg.senderColor)
                                 Text(msg.content)
                                     .font(.subheadline)
+                                    .foregroundColor(AppTheme.textPrimary)
                                     .lineLimit(2)
                             }
                             Spacer()
@@ -471,7 +497,11 @@ struct DashboardView: View {
                         .padding(8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(NSColor.windowBackgroundColor).opacity(0.6))
+                                .fill(AppTheme.surfaceElevated.opacity(0.6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(AppTheme.borderSubtle, lineWidth: 1)
+                                )
                         )
                     }
                 }
@@ -494,16 +524,8 @@ struct DashboardView: View {
                 .controlSize(.small)
             }
         }
-        .padding(16)
+        .corvusCard(padding: 16, radius: 14)
         .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(NSColor.controlBackgroundColor))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.primary.opacity(0.04), lineWidth: 1)
-                )
-        )
     }
     
     private func sendQuickMessage() {

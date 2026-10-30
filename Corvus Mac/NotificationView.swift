@@ -21,9 +21,10 @@ struct NotificationView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Anlık Bildirim Merkezi")
                         .font(.title2.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("Ntfy üzerinden \(manager.currentUser.otherUser.name)'in bilgisayarına doğrudan masaüstü ve sesli bildirim gönder.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 
                 // Active route card
@@ -31,7 +32,7 @@ struct NotificationView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("GÖNDEREN")
                             .font(.caption2.weight(.bold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                         HStack(spacing: 6) {
                             Image(systemName: manager.currentUser.avatarSystemImage)
                             Text(manager.currentUser.name)
@@ -41,12 +42,12 @@ struct NotificationView: View {
                     }
                     
                     Image(systemName: "arrow.right")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textMuted)
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("ALICI")
                             .font(.caption2.weight(.bold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                         HStack(spacing: 6) {
                             Image(systemName: manager.currentUser.otherUser.avatarSystemImage)
                             Text(manager.currentUser.otherUser.name)
@@ -60,26 +61,32 @@ struct NotificationView: View {
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("KANAL (TOPIC)")
                             .font(.caption2.weight(.bold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                         Text(manager.currentUser.sendNotificationTopic)
                             .font(.system(.caption, design: .monospaced))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textSecondary)
                     }
                 }
                 .padding(16)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(NSColor.controlBackgroundColor))
+                        .fill(AppTheme.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppTheme.border, lineWidth: 1)
+                        )
                 )
                 
                 // Form
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Bildirim Detayları")
                         .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
                     
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Öncelik Derecesi")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         
                         Picker("Öncelik", selection: $priority) {
                             Text("Düşük (1)").tag(1)
@@ -93,16 +100,17 @@ struct NotificationView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Mesaj Metni")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         
                         TextEditor(text: $messageText)
                             .font(.body)
                             .frame(minHeight: 120)
                             .padding(8)
-                            .background(Color(NSColor.textBackgroundColor))
+                            .background(AppTheme.surfaceElevated)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                                    .stroke(AppTheme.border, lineWidth: 1)
                             )
                     }
                     
@@ -110,7 +118,7 @@ struct NotificationView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Hızlı Şablonlar")
                             .font(.caption.weight(.bold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.textMuted)
                         
                         HStack(spacing: 8) {
                             quickTemplateButton("Haftalık program hazırlandı, kontrol et!")
@@ -123,7 +131,7 @@ struct NotificationView: View {
                         if let status = sendStatus {
                             Text(status)
                                 .font(.caption.weight(.medium))
-                                .foregroundColor(status.contains("✓") ? .green : .red)
+                                .foregroundColor(status.contains("✓") ? AppTheme.accentGreen : AppTheme.accentRose)
                         }
                         
                         Spacer()
@@ -146,15 +154,11 @@ struct NotificationView: View {
                         .controlSize(.regular)
                     }
                 }
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color(NSColor.controlBackgroundColor))
-                )
+                .corvusCard(padding: 20, radius: 14)
             }
             .padding(24)
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(AppTheme.bg)
     }
     
     private func quickTemplateButton(_ text: String) -> some View {
@@ -163,6 +167,7 @@ struct NotificationView: View {
         } label: {
             Text(text)
                 .font(.caption2)
+                .foregroundColor(AppTheme.textPrimary)
                 .lineLimit(1)
         }
         .buttonStyle(.bordered)
@@ -181,7 +186,7 @@ struct NotificationView: View {
                 sendStatus = "✓ Bildirim başarıyla gönderildi!"
                 messageText = ""
             } else {
-                sendStatus = "❌ Bildirim gönderilirken hata oluştu."
+                sendStatus = "✗ Bildirim gönderilirken hata oluştu."
             }
         }
     }

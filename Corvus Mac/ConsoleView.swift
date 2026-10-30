@@ -19,26 +19,30 @@ struct ConsoleView: View {
                     HStack(spacing: 8) {
                         Text("Konsol & Canlı Çıktılar")
                             .font(.title2.weight(.bold))
+                            .foregroundColor(AppTheme.textPrimary)
                         
                         if manager.isRunningTask {
                             ProgressView()
                                 .controlSize(.small)
                             Text("Çalışıyor: \(manager.currentTaskTitle ?? "")")
                                 .font(.caption.weight(.semibold))
-                                .foregroundColor(.blue)
+                                .foregroundColor(AppTheme.accentCyan)
                         } else {
                             Text("Boşta")
                                 .font(.caption.weight(.semibold))
-                                .padding(.horizontal, 6)
+                                .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.15))
-                                .foregroundColor(.secondary)
+                                .background(AppTheme.surfaceElevated)
+                                .foregroundColor(AppTheme.textMuted)
+                                .overlay(
+                                    Capsule().stroke(AppTheme.border, lineWidth: 1)
+                                )
                                 .clipShape(Capsule())
                         }
                     }
                     Text("After Effects aerender, Photoshop JSX ve Python otomasyon süreçlerinin anlık konsol logları.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 
                 Spacer()
@@ -46,6 +50,7 @@ struct ConsoleView: View {
                 Toggle("Otomatik Kaydır", isOn: $autoScroll)
                     .toggleStyle(.checkbox)
                     .font(.caption)
+                    .foregroundColor(AppTheme.textSecondary)
                 
                 if manager.isRunningTask {
                     Button(role: .destructive) {
@@ -54,7 +59,7 @@ struct ConsoleView: View {
                         Label("Süreci Durdur", systemImage: "stop.circle.fill")
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.red)
+                    .tint(AppTheme.accentRose)
                 }
                 
                 Button {
@@ -65,9 +70,10 @@ struct ConsoleView: View {
                 .buttonStyle(.bordered)
             }
             .padding(16)
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(AppTheme.surface)
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Terminal Area
             ScrollViewReader { proxy in
@@ -76,11 +82,11 @@ struct ConsoleView: View {
                         if manager.consoleLogs.isEmpty {
                             VStack(spacing: 10) {
                                 Image(systemName: "terminal")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.secondary.opacity(0.4))
+                                    .font(.system(size: 44))
+                                    .foregroundColor(AppTheme.textMuted.opacity(0.4))
                                 Text("Henüz çalışan bir komut çıktısı yok.")
                                     .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(AppTheme.textMuted)
                             }
                             .frame(maxWidth: .infinity, minHeight: 300)
                         } else {
@@ -88,11 +94,15 @@ struct ConsoleView: View {
                                 HStack(alignment: .top, spacing: 8) {
                                     Text("[\(log.timeString)]")
                                         .font(.system(size: 11, weight: .regular, design: .monospaced))
-                                        .foregroundColor(.secondary.opacity(0.8))
+                                        .foregroundColor(AppTheme.textMuted)
                                     
                                     Text(log.text)
                                         .font(.system(size: 12, weight: .regular, design: .monospaced))
-                                        .foregroundColor(log.isError ? .red : (log.isProgress ? .yellow : .primary))
+                                        .foregroundColor(
+                                            log.isError ? AppTheme.accentRose :
+                                            (log.isProgress ? AppTheme.accentCyan :
+                                             (log.text.contains("✓") ? AppTheme.accentGreen : AppTheme.textPrimary))
+                                        )
                                         .textSelection(.enabled)
                                     
                                     Spacer()
@@ -103,7 +113,7 @@ struct ConsoleView: View {
                     }
                     .padding(16)
                 }
-                .background(Color(nsColor: NSColor.textBackgroundColor).opacity(0.85))
+                .background(AppTheme.bg)
                 .onChange(of: manager.consoleLogs.count) { _, _ in
                     if autoScroll, let last = manager.consoleLogs.last?.id {
                         proxy.scrollTo(last, anchor: .bottom)
@@ -111,5 +121,6 @@ struct ConsoleView: View {
                 }
             }
         }
+        .background(AppTheme.bg)
     }
 }

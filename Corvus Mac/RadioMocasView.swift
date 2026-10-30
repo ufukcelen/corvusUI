@@ -18,14 +18,15 @@ struct RadioMocasView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Radio Mocas Stüdyosu")
                         .font(.title2.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("Filtresiz Memleket Havası, Albert ve Cem, Mocas Bey ve Aklımdaki Filmler otomasyonları.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
                 Spacer()
             }
             .padding(20)
-            .background(Color(NSColor.controlBackgroundColor))
+            .background(AppTheme.surface)
             
             // Program Tabs
             ScrollView(.horizontal, showsIndicators: false) {
@@ -39,9 +40,10 @@ struct RadioMocasView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
             }
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+            .background(AppTheme.surface.opacity(0.6))
             
             Divider()
+                .overlay(AppTheme.border)
             
             // Subprogram Content
             ScrollView {
@@ -64,7 +66,7 @@ struct RadioMocasView: View {
                 .padding(24)
             }
         }
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(AppTheme.bg)
     }
     
     private func subProgramTab(id: String, title: String, icon: String) -> some View {
@@ -78,8 +80,12 @@ struct RadioMocasView: View {
             .font(.callout.weight(selectedSubProgram == id ? .semibold : .regular))
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(selectedSubProgram == id ? Color.accentColor : Color(NSColor.controlBackgroundColor))
-            .foregroundColor(selectedSubProgram == id ? .white : .primary)
+            .background(selectedSubProgram == id ? AppTheme.accentOrange : AppTheme.surfaceElevated)
+            .foregroundColor(selectedSubProgram == id ? .black : AppTheme.textPrimary)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(selectedSubProgram == id ? AppTheme.accentOrange : AppTheme.border, lineWidth: 1)
+            )
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
@@ -97,29 +103,33 @@ struct MemleketDuyuruCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.orange.opacity(0.15))
+                        .fill(AppTheme.accentOrange.opacity(0.18))
                         .frame(width: 50, height: 50)
                     Image(systemName: "waveform")
                         .font(.system(size: 24))
-                        .foregroundColor(.orange)
+                        .foregroundColor(AppTheme.accentOrange)
                 }
+                .corvusGlow(color: AppTheme.accentOrange, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Filtresiz Memleket Havası Duyuru Otomasyonu")
                         .font(.title3.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("mem.json dosyasını saat ile günceller, rastgele memGorsel seçer ve After Effects memSahne renderını başlatır.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Yayın Saati")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         TextField("22:00", text: $broadcastHour)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 140)
@@ -128,6 +138,7 @@ struct MemleketDuyuruCard: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Render")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         Toggle("AE Render Başlat (FMH_*.mp4)", isOn: $runRender)
                     }
                 }
@@ -148,11 +159,7 @@ struct MemleketDuyuruCard: View {
                 .disabled(manager.isRunningTask)
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 24, radius: 16)
     }
 }
 
@@ -166,28 +173,32 @@ struct MemleketThumbCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.orange.opacity(0.15))
+                        .fill(AppTheme.accentOrange.opacity(0.18))
                         .frame(width: 50, height: 50)
                     Image(systemName: "photo.badge.plus")
                         .font(.system(size: 24))
-                        .foregroundColor(.orange)
+                        .foregroundColor(AppTheme.accentOrange)
                 }
+                .corvusGlow(color: AppTheme.accentOrange, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Memleket Thumbnail Oluşturucu (Photoshop)")
                         .font(.title3.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("memleketYatay.psd şablonunu açar, bolumno katmanına # girer, renk1 ve renk2 tonlarına rastgele Hue değerleri atar ve Masaüstüne kaydeder.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Bölüm Numarası")
                         .font(.subheadline.weight(.medium))
+                        .foregroundColor(AppTheme.textSecondary)
                     TextField("Örn: 24 veya #24", text: $episodeNumber)
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: 240)
@@ -208,11 +219,7 @@ struct MemleketThumbCard: View {
                 .disabled(episodeNumber.trimmingCharacters(in: .whitespaces).isEmpty || manager.isRunningTask)
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 24, radius: 16)
     }
 }
 
@@ -227,29 +234,33 @@ struct AlbertCemCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.yellow.opacity(0.15))
+                        .fill(AppTheme.accentCyan.opacity(0.18))
                         .frame(width: 50, height: 50)
                     Image(systemName: "mic.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(.yellow)
+                        .foregroundColor(AppTheme.accentCyan)
                 }
+                .corvusGlow(color: AppTheme.accentCyan, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Albert ve Cem Duyuru Otomasyonu")
                         .font(.title3.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
                     Text("albert.json dosyasını saat ile günceller, After Effects albertSahne renderını başlatır ve albertSeo.txt oluşturur.")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             
             Divider()
+                .overlay(AppTheme.border)
             
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Yayın Saati")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         TextField("23:00", text: $broadcastHour)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 140)
@@ -258,6 +269,7 @@ struct AlbertCemCard: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Render")
                             .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
                         Toggle("AE Render Başlat (albert_*.mp4)", isOn: $runRender)
                     }
                 }
@@ -278,11 +290,7 @@ struct AlbertCemCard: View {
                 .disabled(manager.isRunningTask)
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 24, radius: 16)
     }
 }
 
@@ -295,28 +303,29 @@ struct RadioUnderConstructionCard: View {
         VStack(spacing: 20) {
             Image(systemName: icon)
                 .font(.system(size: 56))
-                .foregroundColor(.secondary.opacity(0.6))
+                .foregroundColor(AppTheme.textMuted.opacity(0.6))
             
             Text(title)
                 .font(.title2.weight(.bold))
+                .foregroundColor(AppTheme.textPrimary)
             
             Text("Bu program otomasyonu corvus.py altyapısında şu anda yapım aşamasındadır.")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.textSecondary)
             
             Text("🚧 YAPIM AŞAMASINDA")
                 .font(.caption.weight(.heavy))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.orange.opacity(0.15))
-                .foregroundColor(.orange)
+                .background(AppTheme.accentOrange.opacity(0.18))
+                .foregroundColor(AppTheme.accentOrange)
+                .overlay(
+                    Capsule().stroke(AppTheme.accentOrange.opacity(0.3), lineWidth: 1)
+                )
                 .clipShape(Capsule())
         }
         .frame(maxWidth: .infinity, minHeight: 280)
         .padding(32)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
+        .corvusCard(padding: 32, radius: 16)
     }
 }

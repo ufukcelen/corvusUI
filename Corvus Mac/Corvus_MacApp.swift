@@ -9,10 +9,13 @@ import SwiftUI
 
 @main
 struct Corvus_MacApp: App {
+    @StateObject private var manager = CorvusManager.shared
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .frame(minWidth: 980, idealWidth: 1100, minHeight: 640, idealHeight: 740)
+                .preferredColorScheme(manager.appThemeMode.colorScheme)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
