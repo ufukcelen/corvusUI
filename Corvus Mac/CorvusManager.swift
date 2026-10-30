@@ -59,6 +59,10 @@ final class CorvusManager: ObservableObject {
     @Published var photoshopAppName: String = ""
     @Published var apiKeyFound: Bool = false
     
+    // Submodule Engine Updates
+    @Published var isUpdatingSubmodule: Bool = false
+    @Published var submoduleUpdateStatus: String? = nil
+    
     // Notifications
     @Published var latestNotificationText: String?
     @Published var latestNotificationSender: String?
@@ -73,9 +77,8 @@ final class CorvusManager: ObservableObject {
         let savedUser = UserDefaults.standard.string(forKey: "CorvusActiveUserId") ?? "1"
         self.currentUser = CorvusUser(rawValue: savedUser) ?? .ufuk
         
-        // Load project path
-        let defaultDir = "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon"
-        self.corvusProjectPath = UserDefaults.standard.string(forKey: "CorvusProjectPath") ?? (FileManager.default.fileExists(atPath: defaultDir) ? defaultDir : NSHomeDirectory() + "/Desktop")
+        // Load project path with smart discovery (Submodule > Dev Folder > Saved)
+        self.corvusProjectPath = Self.detectBestProjectPath()
         
         // Load python path
         let defaultPython = "/opt/homebrew/bin/python3"
@@ -93,6 +96,80 @@ final class CorvusManager: ObservableObject {
     
     deinit {
         pollTimer?.invalidate()
+    }
+    
+    // MARK: - Smart Path Detection
+    static func detectBestProjectPath() -> String {
+        // 1. Saved custom path in UserDefaults (if valid)
+        if let saved = UserDefaults.standard.string(forKey: "CorvusProjectPath"),
+           FileManager.default.fileExists(atPath: (saved as NSString).appendingPathComponent("corvus.py")) {
+            return saved
+        }
+        
+        // 2. Submodule inside the repository (CorvusEngine)
+        let candidateSubmodules = [
+            "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine",
+            NSHomeDirectory() + "/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine",
+            Bundle.main.resourcePath.map { ($0 as NSString).appendingPathComponent("CorvusEngine") } ?? ""
+        ]
+        for p in candidateSubmodules {
+            if !p.isEmpty && FileManager.default.fileExists(atPath: (p as NSString).appendingPathComponent("corvus.py")) {
+                return p
+            }
+        }
+        
+        // 3. Original local workspace
+        let devOriginal = "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon"
+        if FileManager.default.fileExists(atPath: (devOriginal as NSString).appendingPathComponent("corvus.py")) {
+            return devOriginal
+        }
+        
+        return NSHomeDirectory() + "/Desktop"
+    }
+    
+    // MARK: - Submodule Sync
+    func updateSubmoduleEngine() {
+        guard !isUpdatingSubmodule else { return }
+        isUpdatingSubmodule = true
+        submoduleUpdateStatus = "Güncellemeler çekiliyor..."
+        
+        let targetDir = corvusProjectPath
+        
+        Task.detached(priority: .userInitiated) {
+            let proc = Process()
+            proc.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+            proc.arguments = ["-C", targetDir, "pull", "origin", "main"]
+            let pipe = Pipe()
+            proc.standardOutput = pipe
+            proc.standardError = pipe
+            
+            do {
+                try proc.run()
+                proc.waitUntilExit()
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let output = String(data: data, encoding: .utf8) ?? ""
+                
+                await MainActor.run {
+                    self.isUpdatingSubmodule = false
+                    if proc.terminationStatus == 0 {
+                        if output.contains("Already up to date") || output.contains("Zaten güncel") {
+                            self.submoduleUpdateStatus = "✓ CLI çekirdeği en güncel sürümde."
+                        } else {
+                            self.submoduleUpdateStatus = "✓ Başarıyla güncellendi!"
+                        }
+                        self.consoleLogs.append(ProcessLogItem(text: "[Git Submodule Sync] " + output.trimmingCharacters(in: .whitespacesAndNewlines), isError: false, isProgress: false))
+                    } else {
+                        self.submoduleUpdateStatus = "❌ Güncelleme başarısız: \(output)"
+                    }
+                    self.checkSystemHealth()
+                }
+            } catch {
+                await MainActor.run {
+                    self.isUpdatingSubmodule = false
+                    self.submoduleUpdateStatus = "❌ Hata: \(error.localizedDescription)"
+                }
+            }
+        }
     }
     
     // MARK: - Polling

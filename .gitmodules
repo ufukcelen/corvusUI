@@ -1,0 +1,3 @@
+[submodule "CorvusEngine"]
+	path = CorvusEngine
+	url = https://github.com/ufukcelen/Corvus.git

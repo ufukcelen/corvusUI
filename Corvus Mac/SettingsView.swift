@@ -10,32 +10,110 @@ import AppKit
 
 struct SettingsView: View {
     @ObservedObject var manager = CorvusManager.shared
-    @State private var showChangelog = false
     @State private var projectPathInput: String = ""
     @State private var pythonPathInput: String = ""
-    @State private var saveStatus: String?
+    @State private var saveStatus: String? = nil
+    @State private var showChangelog: Bool = false
+    
+    var isSubmoduleActive: Bool {
+        manager.corvusProjectPath.contains("CorvusEngine")
+    }
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 // Header
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Ayarlar ve Sistem Yapılandırması")
-                        .font(.title2.weight(.bold))
-                    Text("Kullanıcı kimliği, dosya yolları, Adobe entegrasyonları ve sürüm bilgileri.")
+                    Text("Ayarlar ve Entegrasyonlar")
+                        .font(.system(size: 26, weight: .bold))
+                    Text("Kullanıcı profili, çekirdek deposu, dosya yolları ve harici araç durumları")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 
-                // User Identity Card
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Kullanıcı Kimliği")
+                // Active User Card
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Aktif Kullanıcı Profili")
                         .font(.headline)
                     
                     HStack(spacing: 16) {
-                        ForEach(CorvusUser.allCases) { u in
-                            userSelectionCard(u)
+                        userSelectionCard(.ufuk)
+                        userSelectionCard(.yigit)
+                    }
+                    
+                    Text("💡 Profil seçimi bildirim rotalarını, sohbet renginizi ve takvim güncellemelerini belirler.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                )
+                
+                // Git Submodule (Corvus Engine) Sync Card
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Corvus CLI Çekirdeği (Git Submodule)")
+                                .font(.headline)
+                            Text("Bağlı Depo: github.com/ufukcelen/Corvus")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
+                        
+                        Spacer()
+                        
+                        if isSubmoduleActive {
+                            Label("Alt Modül Aktif", systemImage: "checkmark.seal.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.green)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.green.opacity(0.12))
+                                .clipShape(Capsule())
+                        } else {
+                            Label("Özel Klasör", systemImage: "folder.fill")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.orange)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.orange.opacity(0.12))
+                                .clipShape(Capsule())
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("CLI motorunda yapılan güncellemeleri tek tıkla buraya çekebilirsiniz:")
+                                .font(.subheadline)
+                            
+                            if let status = manager.submoduleUpdateStatus {
+                                Text(status)
+                                    .font(.caption.weight(.medium))
+                                    .foregroundColor(status.contains("❌") ? .red : .green)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            manager.updateSubmoduleEngine()
+                        } label: {
+                            HStack(spacing: 6) {
+                                if manager.isUpdatingSubmodule {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                }
+                                Text(manager.isUpdatingSubmodule ? "Çekiliyor..." : "Çekirdeği Güncelle (Git Pull)")
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(manager.isUpdatingSubmodule)
                     }
                 }
                 .padding(20)
@@ -79,6 +157,14 @@ struct SettingsView: View {
                         }
                         
                         Spacer()
+                        
+                        Button("Varsayılana Sıfırla (CorvusEngine)") {
+                            let best = CorvusManager.detectBestProjectPath()
+                            projectPathInput = best
+                            manager.corvusProjectPath = best
+                            saveStatus = "✓ Submodule yoluna sıfırlandı."
+                        }
+                        .buttonStyle(.bordered)
                         
                         Button("Ayarları Kaydet") {
                             manager.corvusProjectPath = projectPathInput
@@ -138,7 +224,7 @@ struct SettingsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Corvus Mac v0.0.1 (CLI v1.5.0 Çekirdeği)")
+                            Text("Corvus Mac v0.1.0 (CLI v1.5.0 Çekirdeği)")
                                 .font(.subheadline.weight(.bold))
                             Text("Geliştiriciler: Ufuk Çelen & Mustafa Yiğit Kızılel")
                                 .font(.caption)
@@ -214,15 +300,14 @@ struct SettingsView: View {
     
     private func integrationRow(name: String, detail: String, isOk: Bool) -> some View {
         HStack(spacing: 12) {
-            Circle()
-                .fill(isOk ? Color.green : Color.red)
-                .frame(width: 8, height: 8)
+            Image(systemName: isOk ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                .foregroundColor(isOk ? .green : .orange)
             
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(name)
                     .font(.subheadline.weight(.medium))
                 Text(detail)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(.secondary)
             }
             
@@ -231,7 +316,7 @@ struct SettingsView: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color(NSColor.windowBackgroundColor).opacity(0.6))
+                .fill(Color(NSColor.windowBackgroundColor))
         )
     }
     
@@ -240,6 +325,8 @@ struct SettingsView: View {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
+        panel.prompt = "Klasörü Seç"
+        
         if panel.runModal() == .OK, let url = panel.url {
             projectPathInput = url.path
         }
@@ -255,7 +342,8 @@ struct ChangelogSheet: View {
             "Corvus Mac Native SwiftUI uygulaması entegre edildi.",
             "Canlı Maç ve Haftalık Program Photoshop thumbnail sihirbazları tamamlandı.",
             "Firebase RTDB Takvim ve Sohbet senkronizasyonu gerçek zamanlı hale getirildi.",
-            "Optik Ağırlık algoritması ile yuvarlak ve dikey logoların Photoshop Smart Object içine otomatik dengeli yerleşimi sağlandı."
+            "Optik Ağırlık algoritması ile yuvarlak ve dikey logoların Photoshop Smart Object içine otomatik dengeli yerleşimi sağlandı.",
+            "Git Submodule mimarisi ile Corvus CLI çekirdeği otomatik entegre edildi."
         ]),
         ("v1.4.8", "Ekim 2026", [
             "Tellal/Corvus CLI banner ve rich arayüz geçişleri güncellendi.",
