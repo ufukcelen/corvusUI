@@ -27,7 +27,7 @@ struct SettingsView: View {
                     Text("Ayarlar ve Entegrasyonlar")
                         .font(.system(size: 26, weight: .bold))
                         .foregroundColor(AppTheme.textPrimary)
-                    Text("Görünüm teması, kullanıcı profili, çekirdek deposu, dosya yolları ve harici araç durumları")
+                    Text("Görünüm teması, kullanıcı profili, çekirdek deposu, dosya yolları ve güncelleme merkezi")
                         .font(.subheadline)
                         .foregroundColor(AppTheme.textSecondary)
                 }
@@ -71,78 +71,159 @@ struct SettingsView: View {
                 }
                 .corvusCard(padding: 20, radius: 16)
                 
-                // MARK: - Git Submodule (Corvus Engine) Sync Card
+                // MARK: - Software & Engine Update Hub
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Corvus CLI Çekirdeği (Git Submodule)")
+                            Text("Yazılım ve Güncelleme Merkezi")
                                 .font(.headline)
                                 .foregroundColor(AppTheme.textPrimary)
-                            Text("Bağlı Depo: github.com/ufukcelen/Corvus")
+                            Text("Uygulama ve CLI motorunu GitHub üzerinden güncel ve senkronize tutun")
                                 .font(.caption)
                                 .foregroundColor(AppTheme.textMuted)
                         }
                         
                         Spacer()
                         
-                        if isSubmoduleActive {
-                            Label("Alt Modül Aktif", systemImage: "checkmark.seal.fill")
+                        HStack(spacing: 8) {
+                            Label("v\(manager.appVersion)", systemImage: "sparkles")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(AppTheme.accentCyan)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(AppTheme.accentCyan.opacity(0.15))
+                                .overlay(Capsule().stroke(AppTheme.accentCyan.opacity(0.3), lineWidth: 1))
+                                .clipShape(Capsule())
+                            
+                            Label("CLI v\(manager.engineVersion)", systemImage: "terminal.fill")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(AppTheme.accentGreen)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
                                 .background(AppTheme.accentGreen.opacity(0.15))
-                                .overlay(
-                                    Capsule().stroke(AppTheme.accentGreen.opacity(0.3), lineWidth: 1)
-                                )
-                                .clipShape(Capsule())
-                        } else {
-                            Label("Özel Klasör", systemImage: "folder.fill")
-                                .font(.caption.weight(.semibold))
-                                .foregroundColor(AppTheme.accentOrange)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(AppTheme.accentOrange.opacity(0.15))
-                                .overlay(
-                                    Capsule().stroke(AppTheme.accentOrange.opacity(0.3), lineWidth: 1)
-                                )
+                                .overlay(Capsule().stroke(AppTheme.accentGreen.opacity(0.3), lineWidth: 1))
                                 .clipShape(Capsule())
                         }
                     }
                     
-                    Divider()
-                        .overlay(AppTheme.border)
+                    Divider().overlay(AppTheme.border)
                     
+                    // Live Status Rows
+                    VStack(spacing: 10) {
+                        // Corvus Mac UI Repo Row
+                        HStack(spacing: 12) {
+                            Image(systemName: "desktopcomputer")
+                                .font(.system(size: 16))
+                                .foregroundColor(AppTheme.accentCyan)
+                                .frame(width: 24)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Corvus Mac UI (SwiftUI Arayüzü)")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundColor(AppTheme.textPrimary)
+                                Text(manager.latestAppCommit ?? "Depo: github.com/ufukcelen/corvusUI")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textSecondary)
+                                    .lineLimit(1)
+                            }
+                            
+                            Spacer()
+                            
+                            Link("GitHub", destination: URL(string: "https://github.com/ufukcelen/corvusUI")!)
+                                .font(.caption)
+                                .foregroundColor(AppTheme.accentCyan)
+                        }
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(AppTheme.surfaceElevated)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.borderSubtle, lineWidth: 1))
+                        )
+                        
+                        // Corvus Engine CLI Repo Row
+                        HStack(spacing: 12) {
+                            Image(systemName: "chevron.left.forwardslash.chevron.right")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(AppTheme.accentGreen)
+                                .frame(width: 24)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Corvus CLI Çekirdeği (Python Motoru)")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundColor(AppTheme.textPrimary)
+                                Text(manager.latestCliCommit ?? "Depo: github.com/ufukcelen/Corvus (Git Submodule)")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textSecondary)
+                                    .lineLimit(1)
+                            }
+                            
+                            Spacer()
+                            
+                            Link("GitHub", destination: URL(string: "https://github.com/ufukcelen/Corvus")!)
+                                .font(.caption)
+                                .foregroundColor(AppTheme.accentGreen)
+                        }
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(AppTheme.surfaceElevated)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.borderSubtle, lineWidth: 1))
+                        )
+                    }
+                    
+                    // Status and action buttons
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("CLI motorunda yapılan güncellemeleri tek tıkla buraya çekebilirsiniz:")
-                                .font(.subheadline)
-                                .foregroundColor(AppTheme.textSecondary)
-                            
-                            if let status = manager.submoduleUpdateStatus {
-                                Text(status)
+                            if let s = manager.submoduleUpdateStatus ?? manager.updateCheckResult {
+                                Text(s)
                                     .font(.caption.weight(.medium))
-                                    .foregroundColor(status.contains("✗") ? AppTheme.accentRose : AppTheme.accentGreen)
+                                    .foregroundColor(s.contains("✗") ? AppTheme.accentRose : AppTheme.accentGreen)
+                            } else {
+                                Text("Depolar güncel. Yeni özellikler eklendiğinde doğrudan buradan güncelleyebilirsiniz.")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textMuted)
+                            }
+                            
+                            if let last = manager.lastUpdateCheckDate {
+                                Text("Son kontrol: \(last.formatted(date: .abbreviated, time: .shortened))")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(AppTheme.textMuted)
                             }
                         }
                         
                         Spacer()
                         
                         Button {
-                            manager.updateSubmoduleEngine()
+                            Task {
+                                await manager.checkForUpdates()
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                if manager.isCheckingForUpdates {
+                                    ProgressView().controlSize(.small)
+                                } else {
+                                    Image(systemName: "magnifyingglass")
+                                }
+                                Text(manager.isCheckingForUpdates ? "Denetleniyor..." : "Denetle")
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(manager.isCheckingForUpdates || manager.isUpdatingSubmodule)
+                        
+                        Button {
+                            manager.updateAllComponents()
                         } label: {
                             HStack(spacing: 6) {
                                 if manager.isUpdatingSubmodule {
-                                    ProgressView()
-                                        .controlSize(.small)
+                                    ProgressView().controlSize(.small)
                                 } else {
                                     Image(systemName: "arrow.triangle.2.circlepath")
                                 }
-                                Text(manager.isUpdatingSubmodule ? "Çekiliyor..." : "Çekirdeği Güncelle (Git Pull)")
+                                Text(manager.isUpdatingSubmodule ? "Güncelleniyor..." : "Tümünü Güncelle (Git Pull)")
                             }
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(manager.isUpdatingSubmodule)
+                        .disabled(manager.isUpdatingSubmodule || manager.isCheckingForUpdates)
                     }
                 }
                 .corvusCard(padding: 20, radius: 16)
@@ -190,7 +271,7 @@ struct SettingsView: View {
                             let best = CorvusManager.detectBestProjectPath()
                             projectPathInput = best
                             manager.corvusProjectPath = best
-                            saveStatus = "✓ Submodule yoluna sıfırlandı."
+                            saveStatus = "✓ Varsayılan konuma sıfırlandı."
                         }
                         .buttonStyle(.bordered)
                         
@@ -246,7 +327,7 @@ struct SettingsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Corvus Mac v0.1.0 (CLI v1.5.0 Çekirdeği)")
+                            Text("Corvus Mac v\(manager.appVersion) (CLI v\(manager.engineVersion) Çekirdeği)")
                                 .font(.subheadline.weight(.bold))
                                 .foregroundColor(AppTheme.textPrimary)
                             Text("Geliştiriciler: Ufuk Çelen & Mustafa Yiğit Kızılel")
@@ -413,6 +494,7 @@ struct ChangelogSheet: View {
     
     let changelogs: [(version: String, date: String, items: [String])] = [
         ("v1.5.0", "Ekim 2026", [
+            "Yazılım ve Güncelleme Merkezi (Auto-Update Hub) eklendi.",
             "Şık Dark Mode stüdyo teması (Obsidian, OLED, Space) eklendi.",
             "Corvus Mac Native SwiftUI uygulaması entegre edildi.",
             "Canlı Maç ve Haftalık Program Photoshop thumbnail sihirbazları tamamlandı.",

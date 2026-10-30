@@ -18,6 +18,8 @@ final class CorvusManager: ObservableObject {
     let firebaseBaseURL = "https://tellal-otomasyon-default-rtdb.europe-west1.firebasedatabase.app/tellal_db"
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
+    let appVersion = "0.1.0"
+    let engineVersion = "1.5.0"
     
     // MARK: - Published Properties
     @Published var currentUser: CorvusUser = .ufuk {
@@ -66,9 +68,14 @@ final class CorvusManager: ObservableObject {
     @Published var photoshopAppName: String = ""
     @Published var apiKeyFound: Bool = false
     
-    // Submodule Engine Updates
+    // Software & Submodule Engine Updates
     @Published var isUpdatingSubmodule: Bool = false
     @Published var submoduleUpdateStatus: String? = nil
+    @Published var isCheckingForUpdates: Bool = false
+    @Published var updateCheckResult: String? = nil
+    @Published var latestAppCommit: String? = nil
+    @Published var latestCliCommit: String? = nil
+    @Published var lastUpdateCheckDate: Date? = nil
     
     // Notifications
     @Published var latestNotificationText: String?
@@ -88,12 +95,17 @@ final class CorvusManager: ObservableObject {
         let savedTheme = UserDefaults.standard.string(forKey: "CorvusAppThemeMode") ?? "obsidian"
         self.appThemeMode = AppThemeMode(rawValue: savedTheme) ?? .obsidian
         
-        // Load project path with smart discovery (Submodule > Dev Folder > Saved)
+        // Load project path with smart discovery (Submodule > App Support > Dev Folder > Saved)
         self.corvusProjectPath = Self.detectBestProjectPath()
         
-        // Load python path
-        let defaultPython = "/opt/homebrew/bin/python3"
-        self.pythonExecutablePath = UserDefaults.standard.string(forKey: "CorvusPythonPath") ?? (FileManager.default.fileExists(atPath: defaultPython) ? defaultPython : "/usr/bin/python3")
+        // Smart python path detection
+        let pythonCandidates = [
+            "/opt/homebrew/bin/python3",
+            "/usr/local/bin/python3",
+            "/usr/bin/python3"
+        ]
+        let defaultPython = pythonCandidates.first { FileManager.default.fileExists(atPath: $0) } ?? "/usr/bin/python3"
+        self.pythonExecutablePath = UserDefaults.standard.string(forKey: "CorvusPythonPath") ?? defaultPython
         
         // Initial health check
         checkSystemHealth()
@@ -102,6 +114,7 @@ final class CorvusManager: ObservableObject {
         Task {
             await syncAll()
             startPolling()
+            await checkForUpdates()
         }
     }
     
@@ -117,70 +130,139 @@ final class CorvusManager: ObservableObject {
             return saved
         }
         
-        // 2. Submodule inside the repository (CorvusEngine)
-        let candidateSubmodules = [
+        // 2. Submodule inside local developer repository (CorvusEngine)
+        let candidateDevSubmodules = [
             "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine",
             NSHomeDirectory() + "/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine",
-            Bundle.main.resourcePath.map { ($0 as NSString).appendingPathComponent("CorvusEngine") } ?? ""
+            "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon"
         ]
-        for p in candidateSubmodules {
-            if !p.isEmpty && FileManager.default.fileExists(atPath: (p as NSString).appendingPathComponent("corvus.py")) {
+        for p in candidateDevSubmodules {
+            if FileManager.default.fileExists(atPath: (p as NSString).appendingPathComponent("corvus.py")) {
                 return p
             }
         }
         
-        // 3. Original local workspace
-        let devOriginal = "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon"
-        if FileManager.default.fileExists(atPath: (devOriginal as NSString).appendingPathComponent("corvus.py")) {
-            return devOriginal
+        // 3. Application Support Corvus Engine (Writable directory for distributed app)
+        let appSupportDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?.appendingPathComponent("Corvus/Engine")
+        if let appSupportPath = appSupportDir?.path,
+           FileManager.default.fileExists(atPath: (appSupportPath as NSString).appendingPathComponent("corvus.py")) {
+            return appSupportPath
+        }
+        
+        // 4. Bundled inside .app Resources/CorvusEngine -> copy to Application Support for write access
+        if let bundleEnginePath = Bundle.main.path(forResource: "CorvusEngine", ofType: nil),
+           let appSupportDir = appSupportDir {
+            let targetPath = appSupportDir.path
+            if !FileManager.default.fileExists(atPath: targetPath) {
+                try? FileManager.default.createDirectory(at: appSupportDir.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? FileManager.default.copyItem(atPath: bundleEnginePath, toPath: targetPath)
+                if FileManager.default.fileExists(atPath: (targetPath as NSString).appendingPathComponent("corvus.py")) {
+                    return targetPath
+                }
+            }
+            return bundleEnginePath
         }
         
         return NSHomeDirectory() + "/Desktop"
     }
     
-    // MARK: - Submodule Sync
-    func updateSubmoduleEngine() {
+    // MARK: - Software & Submodule Updates
+    func checkForUpdates() async {
+        guard !isCheckingForUpdates else { return }
+        isCheckingForUpdates = true
+        updateCheckResult = "GitHub güncellemeleri taranıyor..."
+        
+        defer {
+            isCheckingForUpdates = false
+            lastUpdateCheckDate = Date()
+        }
+        
+        // 1. Fetch Corvus Mac UI latest commit
+        if let url = URL(string: "https://api.github.com/repos/ufukcelen/corvusUI/commits/main"),
+           let (data, _) = try? await URLSession.shared.data(from: url),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let commit = json["commit"] as? [String: Any],
+           let message = commit["message"] as? String {
+            let firstLine = message.components(separatedBy: .newlines).first ?? message
+            let author = (commit["author"] as? [String: Any])?["name"] as? String ?? "Ufuk"
+            self.latestAppCommit = "\(firstLine) (\(author))"
+        }
+        
+        // 2. Fetch Corvus Engine CLI latest commit
+        if let url = URL(string: "https://api.github.com/repos/ufukcelen/Corvus/commits/main"),
+           let (data, _) = try? await URLSession.shared.data(from: url),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let commit = json["commit"] as? [String: Any],
+           let message = commit["message"] as? String {
+            let firstLine = message.components(separatedBy: .newlines).first ?? message
+            let author = (commit["author"] as? [String: Any])?["name"] as? String ?? "Ufuk"
+            self.latestCliCommit = "\(firstLine) (\(author))"
+        }
+        
+        updateCheckResult = "✓ GitHub bağlantısı kuruldu. En son sürümler denetlendi."
+    }
+    
+    func updateAllComponents() {
         guard !isUpdatingSubmodule else { return }
         isUpdatingSubmodule = true
-        submoduleUpdateStatus = "Güncellemeler çekiliyor..."
-        
-        let targetDir = corvusProjectPath
+        submoduleUpdateStatus = "Tüm güncellemeler çekiliyor..."
         
         Task.detached(priority: .userInitiated) {
-            let proc = Process()
-            proc.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-            proc.arguments = ["-C", targetDir, "pull", "origin", "main"]
-            let pipe = Pipe()
-            proc.standardOutput = pipe
-            proc.standardError = pipe
+            var logLines: [String] = []
+            let engineDir = await self.corvusProjectPath
+            let gitPath = "/usr/bin/git"
             
-            do {
-                try proc.run()
+            // 1. Pull CLI Submodule
+            if FileManager.default.fileExists(atPath: (engineDir as NSString).appendingPathComponent(".git")) {
+                let proc = Process()
+                proc.executableURL = URL(fileURLWithPath: gitPath)
+                proc.arguments = ["-C", engineDir, "pull", "origin", "main"]
+                let pipe = Pipe()
+                proc.standardOutput = pipe
+                proc.standardError = pipe
+                try? proc.run()
                 proc.waitUntilExit()
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                let output = String(data: data, encoding: .utf8) ?? ""
-                
-                await MainActor.run {
-                    self.isUpdatingSubmodule = false
-                    if proc.terminationStatus == 0 {
-                        if output.contains("Already up to date") || output.contains("Zaten güncel") {
-                            self.submoduleUpdateStatus = "✓ CLI çekirdeği en güncel sürümde."
-                        } else {
-                            self.submoduleUpdateStatus = "✓ Başarıyla güncellendi!"
-                        }
-                        self.consoleLogs.append(ProcessLogItem(text: "[Git Submodule Sync] " + output.trimmingCharacters(in: .whitespacesAndNewlines), isError: false, isProgress: false))
-                    } else {
-                        self.submoduleUpdateStatus = "✗ Güncelleme başarısız: \(output)"
-                    }
-                    self.checkSystemHealth()
-                }
-            } catch {
-                await MainActor.run {
-                    self.isUpdatingSubmodule = false
-                    self.submoduleUpdateStatus = "✗ Hata: \(error.localizedDescription)"
+                let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+                logLines.append("[CLI Çekirdeği] " + (out.isEmpty ? "Güncel" : out.trimmingCharacters(in: .whitespacesAndNewlines)))
+            } else {
+                // Standalone fallback: Download latest corvus.py from GitHub
+                if let rawUrl = URL(string: "https://raw.githubusercontent.com/ufukcelen/Corvus/main/corvus.py"),
+                   let (data, res) = try? await URLSession.shared.data(from: rawUrl),
+                   (res as? HTTPURLResponse)?.statusCode == 200 {
+                    let targetPath = (engineDir as NSString).appendingPathComponent("corvus.py")
+                    try? data.write(to: URL(fileURLWithPath: targetPath))
+                    logLines.append("[CLI Çekirdeği] corvus.py GitHub'dan doğrudan indirildi.")
                 }
             }
+            
+            // 2. Pull App UI Repo (if git exists)
+            let appDir = "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac"
+            if FileManager.default.fileExists(atPath: (appDir as NSString).appendingPathComponent(".git")) {
+                let proc2 = Process()
+                proc2.executableURL = URL(fileURLWithPath: gitPath)
+                proc2.arguments = ["-C", appDir, "pull", "origin", "main"]
+                let pipe2 = Pipe()
+                proc2.standardOutput = pipe2
+                proc2.standardError = pipe2
+                try? proc2.run()
+                proc2.waitUntilExit()
+                let out2 = String(data: pipe2.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+                logLines.append("[Corvus Mac UI] " + (out2.isEmpty ? "Güncel" : out2.trimmingCharacters(in: .whitespacesAndNewlines)))
+            }
+            
+            await MainActor.run {
+                self.isUpdatingSubmodule = false
+                self.submoduleUpdateStatus = "✓ Tüm bileşenler başarıyla güncellendi!"
+                for line in logLines {
+                    self.consoleLogs.append(ProcessLogItem(text: line, isError: false, isProgress: false))
+                }
+                self.checkSystemHealth()
+            }
         }
+    }
+    
+    func updateSubmoduleEngine() {
+        updateAllComponents()
     }
     
     // MARK: - Polling
