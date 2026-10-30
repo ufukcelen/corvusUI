@@ -6,10 +6,18 @@
 //
 
 import SwiftUI
+import AppKit
 
 @main
 struct Corvus_MacApp: App {
     @StateObject private var manager = CorvusManager.shared
+    
+    init() {
+        // Set Dock Icon dynamically to the cyber-raven logo
+        if let logo = NSImage(named: "CorvusLogo") {
+            NSApplication.shared.applicationIconImage = logo
+        }
+    }
     
     var body: some Scene {
         WindowGroup {
