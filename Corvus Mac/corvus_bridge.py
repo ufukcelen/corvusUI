@@ -13,20 +13,34 @@ import json
 import io
 import random
 import unicodedata
+import contextlib
 from datetime import datetime, timezone, timedelta
 
-DEFAULT_PROJECT_DIR = "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon"
+# Auto-detect project directory
+BRIDGE_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(BRIDGE_DIR)
+CANDIDATE_DIRS = [
+    os.path.join(REPO_ROOT, "CorvusEngine"),
+    os.path.join(BRIDGE_DIR, "CorvusEngine"),
+    "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon",
+]
+DEFAULT_PROJECT_DIR = next((d for d in CANDIDATE_DIRS if os.path.isdir(d)), BRIDGE_DIR)
+
 
 def setup_environment(project_dir):
     p_dir = os.path.abspath(project_dir or DEFAULT_PROJECT_DIR)
     if not os.path.isdir(p_dir):
-        # Fallback to current directory or SCRIPT_DIR
-        p_dir = os.path.dirname(os.path.abspath(__file__))
+        p_dir = next((d for d in CANDIDATE_DIRS if os.path.isdir(d)), BRIDGE_DIR)
     if p_dir not in sys.path:
         sys.path.insert(0, p_dir)
     os.chdir(p_dir)
     try:
         import corvus
+        # Patch interactive prompts so child subprocess from SwiftUI never blocks/hangs
+        if hasattr(corvus, "Prompt"):
+            corvus.Prompt.ask = lambda *args, **kwargs: kwargs.get("default", "")
+        if hasattr(corvus, "Confirm"):
+            corvus.Confirm.ask = lambda *args, **kwargs: kwargs.get("default", True)
         return corvus, p_dir
     except ImportError as e:
         sys.stderr.write(f"HATA: corvus modülü '{p_dir}' dizininden yüklenemedi: {e}\n")
@@ -43,7 +57,10 @@ def cmd_get_matches(args, corvus, p_dir):
     else:
         params = {"date": tarih, "timezone": "Europe/Istanbul"}
         
-    tum = corvus.api_maclar(params)
+    # Redirect console prints during API call so stdout is strictly clean JSON
+    with contextlib.redirect_stdout(sys.stderr):
+        tum = corvus.api_maclar(params)
+        
     if not args.league:
         maclar = [m for m in tum if m.get("league", {}).get("id") in corvus.HEPSI_LIG_IDLERI]
     else:
@@ -51,9 +68,13 @@ def cmd_get_matches(args, corvus, p_dir):
 
     sonuc = []
     for m in maclar:
-        utc_time = datetime.strptime(m['fixture']['date'], "%Y-%m-%dT%H:%M:%S%z")
-        tr_time = utc_time.astimezone(timezone(timedelta(hours=3)))
-        mac_saati_str = tr_time.strftime("%H:%M")
+        try:
+            utc_time = datetime.strptime(m['fixture']['date'], "%Y-%m-%dT%H:%M:%S%z")
+            tr_time = utc_time.astimezone(timezone(timedelta(hours=3)))
+            mac_saati_str = tr_time.strftime("%H:%M")
+        except Exception:
+            mac_saati_str = "20:00"
+
         sonuc.append({
             "id": m['fixture']['id'],
             "date": m['fixture']['date'],
@@ -104,9 +125,10 @@ def cmd_canli_mac(args, corvus, p_dir):
     mac_sonu = bool(args.mac_sonu)
     
     print(f"[Corvus Mac] Maç aranıyor: ID {mac_id} (Tarih: {tarih})...")
-    tum = corvus.api_maclar({"date": tarih, "timezone": "Europe/Istanbul"})
+    with contextlib.redirect_stdout(sys.stderr):
+        tum = corvus.api_maclar({"date": tarih, "timezone": "Europe/Istanbul"})
+        
     mac_verisi = next((m for m in tum if str(m.get('fixture', {}).get('id')) == mac_id), None)
-    
     if not mac_verisi:
         sys.stderr.write(f"HATA: {mac_id} ID'li maç {tarih} tarihinde bulunamadı!\n")
         sys.exit(1)
@@ -115,30 +137,30 @@ def cmd_canli_mac(args, corvus, p_dir):
     dep_adi = mac_verisi['teams']['away']['name']
     print(f"[Corvus Mac] Seçilen Maç: {ev_adi} vs {dep_adi}")
 
-    utc_time = datetime.strptime(mac_verisi['fixture']['date'], "%Y-%m-%dT%H:%M:%S%z")
-    tr_time = utc_time.astimezone(timezone(timedelta(hours=3)))
-    varsayilan_saat = tr_time.strftime("%H:%M")
-    saat = args.saat or varsayilan_saat
+    try:
+        utc_time = datetime.strptime(mac_verisi['fixture']['date'], "%Y-%m-%dT%H:%M:%S%z")
+        tr_time = utc_time.astimezone(timezone(timedelta(hours=3)))
+        varsayilan_saat = tr_time.strftime("%H:%M")
+    except Exception:
+        varsayilan_saat = "20:00"
 
+    saat = args.saat or varsayilan_saat
     corvus.yayin_saati_kaydet(saat)
 
     lig_id = mac_verisi['league']['id']
-    lig_klasorleri = {
-        2: "cl", 3: "europa", 848: "conf", 203: "superlig", 5: "uluslar"
-    }
-    klasor_adi = lig_klasorleri.get(lig_id, "superlig")
+    b_map = {2: "cl.png", 3: "europa.png", 848: "conferance.png", 203: "superlig.png", 5: "uluslarLigi.png"}
+    bg_map = {2: "clback.png", 3: "europaback.png", 848: "confBack.png", 203: "superligback.png", 5: "ulusArka.png"}
 
     import shutil
-    shutil.copyfile(os.path.join(corvus.BASE_DIR, "Borders", f"{klasor_adi}.png"), os.path.join(corvus.BASE_DIR, "cerceve.png"))
-    shutil.copyfile(os.path.join(corvus.BASE_DIR, "arkaPlanlar", f"{klasor_adi}back.png"), os.path.join(corvus.BASE_DIR, "arkaPlan.png"))
-    
-    konu_adi = "maç sonu.png" if mac_sonu else "canlı maç sohbeti.png"
-    shutil.copyfile(os.path.join(corvus.BASE_DIR, "alt", konu_adi), os.path.join(corvus.BASE_DIR, "konu.png"))
-    shutil.copyfile(os.path.join(corvus.BASE_DIR, "kafalar", "boş.png"), os.path.join(corvus.BASE_DIR, "kafa.png"))
-    shutil.copyfile(os.path.join(corvus.BASE_DIR, "VS.png"), os.path.join(corvus.BASE_DIR, "VS.png"))
+    shutil.copyfile(os.path.join(corvus.BASE_DIR, "Borders", b_map.get(lig_id, "superlig.png")), os.path.join(corvus.BASE_DIR, "cerceve.png"))
+    shutil.copyfile(os.path.join(corvus.BASE_DIR, "arkaPlanlar", bg_map.get(lig_id, "superligback.png")), os.path.join(corvus.BASE_DIR, "arkaPlan.png"))
+    shutil.copyfile(os.path.join(corvus.BASE_DIR, "alt", "maç sonu.png" if mac_sonu else "canlı maç sohbetlerİ.png"), os.path.join(corvus.BASE_DIR, "konu.png"))
+    shutil.copyfile(os.path.join(corvus.BASE_DIR, "kafalar", "millitakım.png" if lig_id == 5 else "haftalık.png"), os.path.join(corvus.BASE_DIR, "kafa.png"))
+    shutil.copyfile(os.path.join(corvus.BASE_DIR, "dosyalar", "VS.png"), os.path.join(corvus.BASE_DIR, "VS.png"))
 
     corvus.logo_hazirla(mac_verisi['teams']['home'].get('logo'), os.path.join(corvus.BASE_DIR, "evTakım.png"), ev_adi)
     corvus.logo_hazirla(mac_verisi['teams']['away'].get('logo'), os.path.join(corvus.BASE_DIR, "depTakım.png"), dep_adi)
+    corvus.png_dogrula(["cerceve.png", "arkaPlan.png", "konu.png", "kafa.png", "VS.png", "evTakım.png", "depTakım.png"])
 
     prog_adi = "Maç Sonu" if mac_sonu else "Canlı Maç Sohbetleri"
     klasor = corvus.cikti_klasoru_al(prog_adi, tarih=tarih)
@@ -184,7 +206,7 @@ def cmd_memleket_duyuru(args, corvus, p_dir):
 
 
 def cmd_memleket_thumbnail(args, corvus, p_dir):
-    bolum_giris = str(args.bolum).strip()
+    bolum_giris = args.bolum
     if not bolum_giris:
         sys.stderr.write("HATA: Bölüm numarası girilmedi!\n")
         sys.exit(1)
@@ -274,7 +296,8 @@ def cmd_haftalik_thumbnail(args, corvus, p_dir):
 def cmd_canli_thumbnail(args, corvus, p_dir):
     mac_id = str(args.mac_id)
     tarih = args.tarih or datetime.now(timezone(timedelta(hours=3))).strftime("%Y-%m-%d")
-    tum = corvus.api_maclar({"date": tarih, "timezone": "Europe/Istanbul"})
+    with contextlib.redirect_stdout(sys.stderr):
+        tum = corvus.api_maclar({"date": tarih, "timezone": "Europe/Istanbul"})
     mac_verisi = next((m for m in tum if str(m.get('fixture', {}).get('id')) == mac_id), None)
     if not mac_verisi:
         sys.stderr.write(f"HATA: {mac_id} ID'li maç {tarih} tarihinde bulunamadı!\n")

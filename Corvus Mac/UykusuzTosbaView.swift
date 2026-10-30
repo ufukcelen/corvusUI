@@ -374,7 +374,16 @@ struct CanliMacProgramCard: View {
         matches = []
         selectedMatch = nil
         
-        let bridgeScript = "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/Corvus Mac/corvus_bridge.py"
+        let bridgeCandidates = [
+            Bundle.main.path(forResource: "corvus_bridge", ofType: "py"),
+            (manager.corvusProjectPath as NSString).appendingPathComponent("corvus_bridge.py"),
+            (manager.corvusProjectPath as NSString).deletingLastPathComponent.appending("/Corvus Mac/corvus_bridge.py"),
+            "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/Corvus Mac/corvus_bridge.py"
+        ]
+        
+        let bridgeScript = bridgeCandidates.compactMap { $0 }.first { FileManager.default.fileExists(atPath: $0) }
+            ?? "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/Corvus Mac/corvus_bridge.py"
+        
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: manager.pythonExecutablePath)
         
@@ -392,15 +401,22 @@ struct CanliMacProgramCard: View {
             proc.waitUntilExit()
             
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let decoded = try? JSONDecoder().decode([MatchItem].self, from: data) {
-                DispatchQueue.main.async {
-                    self.matches = decoded
-                    self.isLoadingMatches = false
+            if let str = String(data: data, encoding: .utf8),
+               let start = str.firstIndex(of: "["),
+               let end = str.lastIndex(of: "]") {
+                let jsonStr = String(str[start...end])
+                if let jsonData = jsonStr.data(using: .utf8),
+                   let decoded = try? JSONDecoder().decode([MatchItem].self, from: jsonData) {
+                    DispatchQueue.main.async {
+                        self.matches = decoded
+                        self.isLoadingMatches = false
+                    }
+                    return
                 }
-            } else {
-                DispatchQueue.main.async {
-                    self.isLoadingMatches = false
-                }
+            }
+            
+            DispatchQueue.main.async {
+                self.isLoadingMatches = false
             }
         }
     }
@@ -599,32 +615,38 @@ struct FcKariyerCard: View {
             Divider()
             
             VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Kariyer Takımı")
-                        .font(.subheadline.weight(.medium))
+                Text("Kariyer Takımı")
+                    .font(.headline)
+                
+                HStack(spacing: 12) {
                     TextField("Takım Adı (Örn: Feyenoord)", text: $teamName)
                         .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: 320)
+                        .frame(maxWidth: 240)
+                    
+                    Toggle("AE Render Başlat", isOn: $runRender)
                 }
                 
-                // Quick suggestions
+                // Popular suggestions chips
                 HStack(spacing: 8) {
-                    Text("Popüler:")
+                    Text("Öneriler:")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                    
                     ForEach(popularTeams, id: \.self) { t in
                         Button {
                             teamName = t
                         } label: {
                             Text(t)
-                                .font(.caption2)
+                                .font(.caption.weight(.medium))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(teamName == t ? Color.accentColor : Color.primary.opacity(0.06))
+                                .foregroundColor(teamName == t ? .white : .primary)
+                                .clipShape(Capsule())
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .buttonStyle(.plain)
                     }
                 }
-                
-                Toggle("AE Render Başlat (fc27Duyuru.mp4)", isOn: $runRender)
             }
             
             HStack {
@@ -634,7 +656,7 @@ struct FcKariyerCard: View {
                     if runRender { args.append("--render") }
                     manager.runBridgeTask(arguments: args, title: "FC27 Kariyer: \(teamName)")
                 } label: {
-                    Label("Kariyer Duyurusunu Başlat", systemImage: "play.fill")
+                    Label("Duyuruyu Başlat", systemImage: "play.fill")
                         .font(.callout.weight(.semibold))
                 }
                 .buttonStyle(.borderedProminent)
@@ -652,29 +674,36 @@ struct FcKariyerCard: View {
 
 // MARK: - 7. Tosba Lojistik Card
 struct TosbaLojistikCard: View {
+    @ObservedObject var manager = CorvusManager.shared
+    
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "truck.box.fill")
-                .font(.system(size: 56))
-                .foregroundColor(.secondary.opacity(0.6))
+        VStack(spacing: 24) {
+            ZStack {
+                Circle()
+                    .fill(Color.teal.opacity(0.12))
+                    .frame(width: 80, height: 80)
+                Image(systemName: "truck.box.fill")
+                    .font(.system(size: 38))
+                    .foregroundColor(.teal)
+            }
             
-            Text("Tosba Lojistik (Euro Truck Simulator 2)")
-                .font(.title2.weight(.bold))
+            VStack(spacing: 8) {
+                Text("Tosba Lojistik Otomasyonu")
+                    .font(.title2.weight(.bold))
+                Text("Euro Truck Simulator 2 ve ortak konvoy yayınları için yakında eklenecektir.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
             
-            Text("Bu duyuru otomasyonu corvus.py altyapısında şu anda yapım aşamasındadır.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            Text("🚧 YAPIM AŞAMASINDA")
-                .font(.caption.weight(.heavy))
+            Text("Geliştirme Aşamasında")
+                .font(.caption.weight(.semibold))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.orange.opacity(0.15))
-                .foregroundColor(.orange)
+                .background(Color.secondary.opacity(0.1))
                 .clipShape(Capsule())
         }
-        .frame(maxWidth: .infinity, minHeight: 280)
-        .padding(32)
+        .frame(maxWidth: .infinity)
+        .padding(40)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(NSColor.controlBackgroundColor))
