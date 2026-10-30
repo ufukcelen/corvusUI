@@ -158,23 +158,23 @@ def cmd_memleket_duyuru(args, corvus, p_dir):
     saat = args.saat or corvus.MEM_VARSAYILAN_SAAT
     print(f"[Corvus Mac] Filtresiz Memleket Havası hazırlanıyor... Saat: {saat}")
     
-    veri = {"memYayinsub": saat, "memYayinbaslik": corvus.MEM_BASLIK}
-    with open(corvus.MEM_JSON_YOLU, "w", encoding="utf-8") as f:
-        json.dump(veri, f, ensure_ascii=False, indent=2)
-
-    gorsel = random.choice(corvus.MEM_GORSELLER)
+    mevcut = [g for g in corvus.MEM_GORSELLER if os.path.exists(os.path.join(corvus.MEM_ASSETS_DIR, g))]
+    if not mevcut:
+        sys.stderr.write(f"HATA: {corvus.MEM_ASSETS_DIR} içinde cemBurhan1-4.png bulunamadı!\n")
+        sys.exit(1)
+        
+    secilen = random.choice(mevcut)
     import shutil
-    shutil.copyfile(os.path.join(corvus.MEM_ASSETS_DIR, gorsel), corvus.MEM_SUB_YOLU)
+    shutil.copyfile(os.path.join(corvus.MEM_ASSETS_DIR, secilen), corvus.MEM_SUB_YOLU)
+    print(f"[Corvus Mac] Seçilen görsel: {secilen} -> yayınSub.png")
 
-    klasor = corvus.cikti_klasoru_al("Filtresiz Memleket Havası")
+    with open(corvus.MEM_JSON_YOLU, "w", encoding="utf-8") as f:
+        json.dump({"baslik": corvus.MEM_BASLIK, "saat": saat}, f, ensure_ascii=False)
+
+    klasor = corvus.cikti_klasoru_al("Memleket Havası")
     if args.render:
-        video_adi = f"FMH_{saat.replace(':', '')}.mp4"
-        proje_yolu = None
-        for aday in corvus.MEM_PROJE_ADAYLARI:
-            yol = os.path.join(corvus.MEMLEKET_DIR, aday)
-            if os.path.exists(yol):
-                proje_yolu = yol
-                break
+        video_adi = f"Memleket_Havasi_{saat.replace(':', '')}.mp4"
+        proje_yolu = next((os.path.join(corvus.MEMLEKET_DIR, a) for a in corvus.MEM_PROJE_ADAYLARI if os.path.exists(os.path.join(corvus.MEMLEKET_DIR, a))), None)
         if not proje_yolu:
             sys.stderr.write("HATA: Memleket After Effects projesi bulunamadı!\n")
             sys.exit(1)
@@ -287,13 +287,12 @@ def cmd_canli_thumbnail(args, corvus, p_dir):
 def cmd_albert_ve_cem(args, corvus, p_dir):
     saat = args.saat or corvus.ALBERT_VARSAYILAN_SAAT
     print(f"[Corvus Mac] Albert ve Cem hazırlanıyor... Saat: {saat}")
-    veri = {"albertYayinSaati": saat}
     with open(corvus.ALBERT_JSON_YOLU, "w", encoding="utf-8") as f:
-        json.dump(veri, f, ensure_ascii=False, indent=2)
+        json.dump({"baslik": "BU AKŞAM", "saat": saat}, f, ensure_ascii=False)
 
     klasor = corvus.cikti_klasoru_al("Albert ve Cem")
     if args.render:
-        video_adi = f"albert_{saat.replace(':', '')}.mp4"
+        video_adi = f"Albert_ve_Cem_{saat.replace(':', '')}.mp4"
         print(f"[Corvus Mac] Render başlatılıyor: {video_adi} -> {klasor}")
         corvus.ae_render_baslat(video_adi, proje_yolu=corvus.ALBERT_PROJE_YOLU, kompozisyon=corvus.ALBERT_KOMPOZISYON, hedef_klasor=klasor)
         corvus.seo_albert_yaz(saat, video_adi, hedef_klasor=klasor)
@@ -304,12 +303,19 @@ def cmd_tek_mac(args, corvus, p_dir):
     kayhan_var = bool(args.kayhan)
     etiketler = [t.strip() for t in (args.etiketler or "").split(",") if t.strip()]
 
-    print(f"[Corvus Mac] Tek Maçtan Yatanlar hazırlanıyor... Saat: {saat}")
+    print(f"[Corvus Mac] Tek Maçtan Yatanlar hazırlanıyor... Saat: {saat} (Kayhan: {'Var' if kayhan_var else 'Yok'})")
     corvus.tmy_json_guncelle(saat)
     
-    gorseller = ["tmyGorsel1.png", "tmyGorsel2.png", "tmyGorsel3.png"]
+    # corvus.py logic: kayhan.png if kayhan_var else cem.png
+    kaynak = "kayhan.png" if kayhan_var else "cem.png"
+    kaynak_yol = os.path.join(corvus.TMY_ASSETS_DIR, kaynak)
+    if not os.path.exists(kaynak_yol):
+        sys.stderr.write(f"HATA: {kaynak_yol} bulunamadı!\n")
+        sys.exit(1)
+
     import shutil
-    shutil.copyfile(os.path.join(corvus.TMY_ASSETS_DIR, random.choice(gorseller)), corvus.TMY_GORSEL_YOLU)
+    shutil.copyfile(kaynak_yol, corvus.TMY_GORSEL_YOLU)
+    print(f"[Corvus Mac] Görsel kopyalandı: {kaynak} -> tmyGorsel.png")
 
     klasor = corvus.cikti_klasoru_al("Tek Maçtan Yatanlar")
     if args.render:
