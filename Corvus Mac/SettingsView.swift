@@ -260,7 +260,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentAmber)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Yayınlandı (\(manager.latestAppTag ?? "v0.1.1"))")
+                Text("Yeni Corvus Mac Sürümü Yayınlandı (\(manager.latestAppTag ?? "v0.1.2"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). macOS uygulamalarının yeni sürümüne geçmek için masaüstündeki yeni 'Corvus Mac.dmg' dosyasını açıp /Applications klasörüne sürükleyin.")
