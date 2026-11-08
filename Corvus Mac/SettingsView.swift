@@ -255,15 +255,15 @@ struct SettingsView: View {
 
     private var versionNoticeBanner: some View {
         HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.title3)
-                .foregroundColor(AppTheme.accentAmber)
+            Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                .font(.title2)
+                .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Yayınlandı (\(manager.latestAppTag ?? "v0.1.2"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.1.2"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
-                Text("Şu an çalışan sürüm: v\(manager.appVersion). macOS uygulamalarının yeni sürümüne geçmek için masaüstündeki yeni 'Corvus Mac.dmg' dosyasını açıp /Applications klasörüne sürükleyin.")
+                Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
                     .font(.caption)
                     .foregroundColor(AppTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -271,13 +271,27 @@ struct SettingsView: View {
             
             Spacer()
             
-            Link("GitHub", destination: URL(string: "https://github.com/ufukcelen/corvusUI/releases")!)
-                .font(.caption.weight(.semibold))
-                .foregroundColor(AppTheme.accentCyan)
+            Button {
+                Task {
+                    await manager.checkForUpdates()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down.circle.fill")
+                    Text("Şimdi Güncelle")
+                }
+                .font(.caption.weight(.bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(AppTheme.accentCyan)
+                .cornerRadius(8)
+            }
+            .buttonStyle(.plain)
         }
         .padding(12)
-        .background(AppTheme.accentAmber.opacity(0.12))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.accentAmber.opacity(0.3), lineWidth: 1))
+        .background(AppTheme.accentCyan.opacity(0.12))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.accentCyan.opacity(0.3), lineWidth: 1))
         .cornerRadius(10)
     }
 

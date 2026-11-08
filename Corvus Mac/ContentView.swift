@@ -21,6 +21,41 @@ struct ContentView: View {
                 .background(AppTheme.bg.ignoresSafeArea())
         }
         .frame(minWidth: 960, minHeight: 640)
+        .overlay {
+            if manager.isAutoUpdating {
+                ZStack {
+                    Color.black.opacity(0.75)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .controlSize(.large)
+                            .tint(AppTheme.accentCyan)
+                        
+                        VStack(spacing: 8) {
+                            Text("Corvus Mac Güncelleniyor")
+                                .font(.title3.weight(.bold))
+                                .foregroundColor(AppTheme.textPrimary)
+                            
+                            Text(manager.autoUpdateStatus ?? "Yeni sürüm indiriliyor ve kuruluyor...")
+                                .font(.subheadline)
+                                .foregroundColor(AppTheme.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: 360)
+                        }
+                    }
+                    .padding(32)
+                    .background(AppTheme.surfaceElevated)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(AppTheme.accentCyan.opacity(0.3), lineWidth: 1.5)
+                    )
+                    .cornerRadius(16)
+                    .corvusGlow(color: AppTheme.accentCyan, radius: 24, opacity: 0.3)
+                    .shadow(radius: 30)
+                }
+            }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
                 if manager.isRunningTask {

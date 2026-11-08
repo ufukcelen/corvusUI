@@ -82,6 +82,8 @@ final class CorvusManager: ObservableObject {
     @Published var lastUpdateCheckDate: Date? = nil
     @Published var latestAppTag: String? = nil
     @Published var isNewAppVersionAvailable: Bool = false
+    @Published var isAutoUpdating: Bool = false
+    @Published var autoUpdateStatus: String? = nil
     
     // Notifications
     @Published var latestNotificationText: String?
@@ -183,17 +185,49 @@ final class CorvusManager: ObservableObject {
             lastUpdateCheckDate = Date()
         }
         
-        // 1. Fetch Corvus Mac UI latest tags & check version
-        if let url = URL(string: "https://api.github.com/repos/ufukcelen/corvusUI/tags"),
-           let (data, _) = try? await URLSession.shared.data(from: url),
-           let tags = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-           let firstTag = tags.first,
-           let tagName = firstTag["name"] as? String {
+        // 1. Fetch Corvus Mac UI latest release from GitHub
+        var downloadZipUrl: URL? = nil
+        var releaseTagFound: String? = nil
+        
+        if let releaseApiUrl = URL(string: "https://api.github.com/repos/ufukcelen/corvusUI/releases/latest"),
+           let (data, response) = try? await URLSession.shared.data(from: releaseApiUrl),
+           (response as? HTTPURLResponse)?.statusCode == 200,
+           let releaseJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let tagName = releaseJson["tag_name"] as? String {
+            releaseTagFound = tagName
             self.latestAppTag = tagName
-            let cleanTag = tagName.replacingOccurrences(of: "v", with: "").trimmingCharacters(in: .whitespaces)
+            
+            // Check for downloadable zip asset
+            if let assets = releaseJson["assets"] as? [[String: Any]] {
+                for asset in assets {
+                    if let name = asset["name"] as? String, name.hasSuffix(".zip"),
+                       let browserDownloadUrl = asset["browser_download_url"] as? String,
+                       let url = URL(string: browserDownloadUrl) {
+                        downloadZipUrl = url
+                        break
+                    }
+                }
+            }
+        } else if let tagsUrl = URL(string: "https://api.github.com/repos/ufukcelen/corvusUI/tags"),
+                  let (data, _) = try? await URLSession.shared.data(from: tagsUrl),
+                  let tags = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+                  let firstTag = tags.first,
+                  let tagName = firstTag["name"] as? String {
+            releaseTagFound = tagName
+            self.latestAppTag = tagName
+        }
+        
+        if let releaseTag = releaseTagFound {
+            let cleanTag = releaseTag.replacingOccurrences(of: "v", with: "").trimmingCharacters(in: .whitespaces)
             let current = self.appVersion.replacingOccurrences(of: "v", with: "").trimmingCharacters(in: .whitespaces)
             if cleanTag.compare(current, options: .numeric) == .orderedDescending {
                 self.isNewAppVersionAvailable = true
+                
+                // If a downloadable zip release asset is available, perform automatic seamless update!
+                if let assetUrl = downloadZipUrl {
+                    await downloadAndApplyAppUpdate(from: assetUrl, newVersion: releaseTag)
+                    return
+                }
             } else {
                 self.isNewAppVersionAvailable = false
             }
@@ -224,6 +258,119 @@ final class CorvusManager: ObservableObject {
         updateCheckResult = "✓ GitHub bağlantısı kuruldu. En son sürümler denetlendi."
     }
     
+    func downloadAndApplyAppUpdate(from assetUrl: URL, newVersion: String) async {
+        guard !isAutoUpdating else { return }
+        
+        await MainActor.run {
+            self.isAutoUpdating = true
+            self.autoUpdateStatus = "Yeni Corvus Mac sürümü (\(newVersion)) indiriliyor..."
+        }
+        
+        let tempDir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("corvus_update_" + UUID().uuidString)
+        let zipFile = tempDir.appendingPathComponent("CorvusUpdate.zip")
+        let extractDir = tempDir.appendingPathComponent("extracted")
+        
+        do {
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            
+            // Download update archive
+            let (downloadedLocation, _) = try await URLSession.shared.download(from: assetUrl)
+            try FileManager.default.moveItem(at: downloadedLocation, to: zipFile)
+            
+            await MainActor.run {
+                self.autoUpdateStatus = "Paket açılıyor ve doğrulanıyor..."
+            }
+            
+            try FileManager.default.createDirectory(at: extractDir, withIntermediateDirectories: true)
+            
+            // Extract using macOS ditto (preserves all permissions and codesign)
+            let dittoProcess = Process()
+            dittoProcess.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+            dittoProcess.arguments = ["-xk", zipFile.path, extractDir.path]
+            try dittoProcess.run()
+            dittoProcess.waitUntilExit()
+            
+            // Locate extracted .app bundle
+            var extractedAppPath: String? = nil
+            let fileManager = FileManager.default
+            let directApp = extractDir.appendingPathComponent("Corvus Mac.app").path
+            if fileManager.fileExists(atPath: directApp) {
+                extractedAppPath = directApp
+            } else {
+                // Search one level deep
+                if let contents = try? fileManager.contentsOfDirectory(atPath: extractDir.path) {
+                    for item in contents {
+                        if item.hasSuffix(".app") {
+                            extractedAppPath = extractDir.appendingPathComponent(item).path
+                            break
+                        }
+                    }
+                }
+            }
+            
+            guard let newAppPath = extractedAppPath else {
+                throw NSError(domain: "CorvusUpdate", code: 404, userInfo: [NSLocalizedDescriptionKey: "Güncelleme paketi içinde uygulama bulunamadı."])
+            }
+            
+            let currentAppBundlePath = Bundle.main.bundlePath
+            let currentPID = ProcessInfo.processInfo.processIdentifier
+            
+            // Don't self-replace if running directly from Xcode DerivedData in Debug build
+            if currentAppBundlePath.contains("DerivedData") {
+                await MainActor.run {
+                    self.isAutoUpdating = false
+                    self.autoUpdateStatus = "Geliştirici modundasınız. Son sürüm (\(newVersion)) indirildi: \(newAppPath)"
+                }
+                return
+            }
+            
+            await MainActor.run {
+                self.autoUpdateStatus = "Yeni sürüm kuruluyor ve Corvus Mac yeniden başlatılıyor..."
+            }
+            
+            // Prepare independent updater script to wait for current process, replace app, and relaunch
+            let scriptPath = tempDir.appendingPathComponent("update_runner.sh").path
+            let updateScript = [
+                "#!/bin/bash",
+                "TARGET=\"\(currentAppBundlePath)\"",
+                "NEW=\"\(newAppPath)\"",
+                "PID=\(currentPID)",
+                "while kill -0 $PID 2>/dev/null; do sleep 0.3; done",
+                "rm -rf \"$TARGET\"",
+                "cp -R \"$NEW\" \"$TARGET\"",
+                "xattr -cr \"$TARGET\" 2>/dev/null",
+                "open \"$TARGET\"",
+                "rm -rf \"\(tempDir.path)\"",
+                "exit 0"
+            ].joined(separator: "\n")
+            try updateScript.write(toFile: scriptPath, atomically: true, encoding: .utf8)
+            
+            let chmodProcess = Process()
+            chmodProcess.executableURL = URL(fileURLWithPath: "/bin/chmod")
+            chmodProcess.arguments = ["+x", scriptPath]
+            try chmodProcess.run()
+            chmodProcess.waitUntilExit()
+            
+            // Launch the detached background runner
+            let runnerProcess = Process()
+            runnerProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
+            runnerProcess.arguments = [scriptPath]
+            try runnerProcess.run()
+            
+            // Wait 500ms then terminate current instance
+            try await Task.sleep(nanoseconds: 500_000_000)
+            await MainActor.run {
+                NSApp.terminate(nil)
+            }
+            
+        } catch {
+            await MainActor.run {
+                self.isAutoUpdating = false
+                self.autoUpdateStatus = "Güncelleme hatası: \(error.localizedDescription)"
+            }
+        }
+    }
+
     func updateAllComponents() {
         guard !isUpdatingSubmodule else { return }
         isUpdatingSubmodule = true
