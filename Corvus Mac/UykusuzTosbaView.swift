@@ -618,8 +618,11 @@ struct FcKariyerCard: View {
     @ObservedObject var manager = CorvusManager.shared
     @State private var teamName: String = "Feyenoord"
     @State private var runRender: Bool = true
+    @State private var isZamanli: Bool = false
+    @State private var broadcastTime: String = "22:45"
     
     let popularTeams = ["Feyenoord", "Ajax", "PSV", "Roma", "Lazio", "Dortmund", "Porto", "Benfica"]
+    let quickTimes = ["20:00", "20:30", "21:00", "22:00", "22:45", "23:00"]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -638,7 +641,9 @@ struct FcKariyerCard: View {
                     Text("FC27 Kariyer Duyuru Otomasyonu")
                         .font(.title3.weight(.bold))
                         .foregroundColor(AppTheme.textPrimary)
-                    Text("kariyer_takim.json üzerinden takım logosunu indirip 203x195 boyutlandırır ve fc27sahne After Effects renderını yürütür.")
+                    Text(isZamanli
+                        ? "Zamanlı yayın: fc27saat.json dosyasını günceller, fc27zaman comp renderını alır ve fc27buaksam.txt metnini üretir."
+                        : "Canlı yayın: Takım logosunu indirip 203x195 boyutlandırır ve fc27sahne After Effects renderını yürütür.")
                         .font(.subheadline)
                         .foregroundColor(AppTheme.textSecondary)
                 }
@@ -646,6 +651,20 @@ struct FcKariyerCard: View {
             
             Divider()
                 .overlay(AppTheme.border)
+            
+            // Mod Seçimi
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Duyuru Modu")
+                    .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
+                
+                Picker("Duyuru Modu", selection: $isZamanli) {
+                    Text("🔴 Şimdi Yayında (Canlı)").tag(false)
+                    Text("⏰ Yayın Saati Ver (Bu Akşam)").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 420)
+            }
             
             VStack(alignment: .leading, spacing: 14) {
                 Text("Kariyer Takımı")
@@ -686,19 +705,62 @@ struct FcKariyerCard: View {
                 }
             }
             
+            if isZamanli {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Yayın Saati")
+                        .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
+                    
+                    HStack(spacing: 12) {
+                        TextField("Yayın Saati (Örn: 22:45)", text: $broadcastTime)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(maxWidth: 160)
+                        
+                        Text("Hızlı Seçim:")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textMuted)
+                        
+                        ForEach(quickTimes, id: \.self) { time in
+                            Button {
+                                broadcastTime = time
+                            } label: {
+                                Text(time)
+                                    .font(.caption.weight(.medium))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(broadcastTime == time ? AppTheme.accentAmber : AppTheme.surfaceElevated)
+                                    .foregroundColor(broadcastTime == time ? .black : AppTheme.textPrimary)
+                                    .overlay(
+                                        Capsule().stroke(broadcastTime == time ? AppTheme.accentAmber : AppTheme.border, lineWidth: 1)
+                                    )
+                                    .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            
             HStack {
                 Spacer()
                 Button {
                     var args = ["fc_kariyer", "--takim", teamName]
+                    if isZamanli {
+                        let cleanTime = broadcastTime.trimmingCharacters(in: .whitespaces)
+                        if !cleanTime.isEmpty {
+                            args.append(contentsOf: ["--saat", cleanTime])
+                        }
+                    }
                     if runRender { args.append("--render") }
-                    manager.runBridgeTask(arguments: args, title: "FC27 Kariyer: \(teamName)")
+                    let titleMode = isZamanli ? "Zamanlı (\(broadcastTime))" : "Şimdi Yayında"
+                    manager.runBridgeTask(arguments: args, title: "FC27 Kariyer: \(teamName) [\(titleMode)]")
                 } label: {
-                    Label("Duyuruyu Başlat", systemImage: "play.fill")
+                    Label(isZamanli ? "Zamanlı Duyuruyu Başlat" : "Duyuruyu Başlat", systemImage: "play.fill")
                         .font(.callout.weight(.semibold))
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .disabled(teamName.trimmingCharacters(in: .whitespaces).isEmpty || manager.isRunningTask)
+                .disabled(teamName.trimmingCharacters(in: .whitespaces).isEmpty || (isZamanli && broadcastTime.trimmingCharacters(in: .whitespaces).isEmpty) || manager.isRunningTask)
             }
         }
         .corvusCard(padding: 24, radius: 16)
