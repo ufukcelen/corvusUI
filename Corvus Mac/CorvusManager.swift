@@ -19,7 +19,7 @@ final class CorvusManager: ObservableObject {
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
     var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.5"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.6"
     }
     let engineVersion = "1.5.1"
     
@@ -454,7 +454,7 @@ final class CorvusManager: ObservableObject {
             await MainActor.run {
                 self.isUpdatingSubmodule = false
                 if self.isNewAppVersionAvailable {
-                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.1.5")) için güncel DMG paketini kurmanız gerekir."
+                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.1.6")) için güncel DMG paketini kurmanız gerekir."
                 } else {
                     self.submoduleUpdateStatus = "✓ Tüm bileşenler başarıyla güncellendi (v\(self.appVersion))!"
                 }
@@ -500,8 +500,9 @@ final class CorvusManager: ObservableObject {
         }
         aerenderFound = foundAe
         
-        // Photoshop
+        // Photoshop (2027, 2026, 2025, 2024 veya dinamik tespit)
         let psCandidates = [
+            "/Applications/Adobe Photoshop 2027",
             "/Applications/Adobe Photoshop 2026",
             "/Applications/Adobe Photoshop 2025",
             "/Applications/Adobe Photoshop 2024"
@@ -512,6 +513,15 @@ final class CorvusManager: ObservableObject {
                 photoshopAppName = (p as NSString).lastPathComponent
                 foundPs = true
                 break
+            }
+        }
+        if !foundPs {
+            if let apps = try? FileManager.default.contentsOfDirectory(atPath: "/Applications") {
+                let matches = apps.filter { $0.hasPrefix("Adobe Photoshop") }.sorted().reversed()
+                if let best = matches.first {
+                    photoshopAppName = (best as NSString).deletingPathExtension
+                    foundPs = true
+                }
             }
         }
         photoshopFound = foundPs
