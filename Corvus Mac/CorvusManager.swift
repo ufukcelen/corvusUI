@@ -887,6 +887,7 @@ final class CorvusManager: ObservableObject {
         // Set environment
         var env = ProcessInfo.processInfo.environment
         env["PYTHONUNBUFFERED"] = "1"
+        env["CA_ASSERT_MAIN_THREAD_TRANSACTIONS"] = "0"
         process.environment = env
         
         let stdoutPipe = Pipe()
