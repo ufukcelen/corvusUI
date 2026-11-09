@@ -93,6 +93,21 @@ final class CorvusManager: ObservableObject {
     // Background polling timer
     private var pollTimer: Timer?
     
+
+    // MARK: - Render Cache & Cleaner
+    @Published var renderCacheFolderPath: String {
+        didSet {
+            UserDefaults.standard.set(renderCacheFolderPath, forKey: "CorvusRenderCacheFolderPath")
+            scanRenderCache()
+        }
+    }
+    @Published var renderCacheTotalSizeBytes: Int64 = 0
+    @Published var renderCacheFileCount: Int = 0
+    @Published var renderCacheItems: [RenderCacheItem] = []
+    @Published var isScanningRenderCache: Bool = false
+    @Published var isCleaningRenderCache: Bool = false
+    @Published var lastCleanedStatus: String? = nil
+
     // MARK: - Init
     init() {
         // Load user
@@ -102,6 +117,11 @@ final class CorvusManager: ObservableObject {
         // Load theme
         let savedTheme = UserDefaults.standard.string(forKey: "CorvusAppThemeMode") ?? "obsidian"
         self.appThemeMode = AppThemeMode(rawValue: savedTheme) ?? .obsidian
+        // Render Cache Folder (default to Desktop)
+        let defaultRenderFolder = UserDefaults.standard.string(forKey: "CorvusRenderCacheFolderPath") ??
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop").path
+        self.renderCacheFolderPath = defaultRenderFolder
+
         
         // Load project path with smart discovery (Submodule > App Support > Dev Folder > Saved)
         self.corvusProjectPath = Self.detectBestProjectPath()
@@ -123,6 +143,7 @@ final class CorvusManager: ObservableObject {
             await syncAll()
             startPolling()
             await checkForUpdates()
+            scanRenderCache()
         }
     }
     
@@ -1006,6 +1027,11 @@ final class CorvusManager: ObservableObject {
         consoleLogs.append(ProcessLogItem(text: "⚠️ Kullanıcı tarafından durduruldu.", isError: true, isProgress: false))
     }
     
+
+    func addConsoleLog(_ text: String, isError: Bool = false) {
+        consoleLogs.append(ProcessLogItem(text: text, isError: isError, isProgress: false))
+    }
+
     func clearConsole() {
         consoleLogs.removeAll()
     }
@@ -1033,4 +1059,160 @@ final class CorvusManager: ObservableObject {
         }
         return results
     }
+
+    // MARK: - Render Cache Operations
+    func scanRenderCache() {
+        guard !renderCacheFolderPath.isEmpty,
+              FileManager.default.fileExists(atPath: renderCacheFolderPath) else {
+            renderCacheTotalSizeBytes = 0
+            renderCacheFileCount = 0
+            renderCacheItems = []
+            return
+        }
+        
+        isScanningRenderCache = true
+        let targetPath = renderCacheFolderPath
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let fm = FileManager.default
+            var totalSize: Int64 = 0
+            var count = 0
+            var items: [RenderCacheItem] = []
+            
+            var isDir: ObjCBool = false
+            if fm.fileExists(atPath: targetPath, isDirectory: &isDir), isDir.boolValue {
+                if let contents = try? fm.contentsOfDirectory(atPath: targetPath) {
+                    for item in contents {
+                        if item.hasPrefix(".") { continue }
+                        let fullPath = (targetPath as NSString).appendingPathComponent(item)
+                        var itemIsDir: ObjCBool = false
+                        if fm.fileExists(atPath: fullPath, isDirectory: &itemIsDir) {
+                            let size: Int64
+                            let date: Date?
+                            let attrs = try? fm.attributesOfItem(atPath: fullPath)
+                            date = attrs?[.modificationDate] as? Date
+                            
+                            if itemIsDir.boolValue {
+                                size = Self.calculateFolderSize(at: fullPath)
+                            } else {
+                                size = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+                            }
+                            
+                            totalSize += size
+                            count += 1
+                            items.append(RenderCacheItem(
+                                name: item,
+                                path: fullPath,
+                                sizeBytes: size,
+                                isDirectory: itemIsDir.boolValue,
+                                modDate: date
+                            ))
+                        }
+                    }
+                }
+            }
+            
+            items.sort { $0.sizeBytes > $1.sizeBytes }
+            
+            DispatchQueue.main.async {
+                self.renderCacheTotalSizeBytes = totalSize
+                self.renderCacheFileCount = count
+                self.renderCacheItems = items
+                self.isScanningRenderCache = false
+            }
+        }
+    }
+    
+    nonisolated static func calculateFolderSize(at path: String) -> Int64 {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(at: URL(fileURLWithPath: path), includingPropertiesForKeys: [.fileSizeKey, .isDirectoryKey], options: [.skipsHiddenFiles]) else {
+            return 0
+        }
+        var total: Int64 = 0
+        for case let fileURL as URL in enumerator {
+            if let resourceValues = try? fileURL.resourceValues(forKeys: [.fileSizeKey, .isDirectoryKey]),
+               resourceValues.isDirectory != true {
+                total += Int64(resourceValues.fileSize ?? 0)
+            }
+        }
+        return total
+    }
+    
+    func clearRenderCache() {
+        guard !renderCacheFolderPath.isEmpty,
+              FileManager.default.fileExists(atPath: renderCacheFolderPath) else {
+            return
+        }
+        
+        isCleaningRenderCache = true
+        lastCleanedStatus = nil
+        let targetPath = renderCacheFolderPath
+        let fm = FileManager.default
+        
+        let prohibitedPaths = [
+            "/",
+            "/System",
+            "/Library",
+            "/Applications",
+            "/Users",
+            "/bin",
+            "/sbin",
+            "/usr",
+            "/var",
+            "/etc",
+            fm.homeDirectoryForCurrentUser.path
+        ]
+        
+        if prohibitedPaths.contains(targetPath) {
+            addConsoleLog("[Render Cache] ⚠️ Güvenlik engeli: Kök veya ana sistem dizinleri temizlenemez!")
+            isCleaningRenderCache = false
+            return
+        }
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            var deletedCount = 0
+            var freedBytes: Int64 = 0
+            let isDesktop = targetPath == fm.homeDirectoryForCurrentUser.appendingPathComponent("Desktop").path
+            
+            if let contents = try? fm.contentsOfDirectory(atPath: targetPath) {
+                for item in contents {
+                    if item.hasPrefix(".") { continue }
+                    let itemPath = (targetPath as NSString).appendingPathComponent(item)
+                    
+                    if isDesktop {
+                        let lower = item.lowercased()
+                        let isRender = lower.hasSuffix(".mp4") || lower.hasSuffix(".mov") || lower.hasSuffix(".avi") ||
+                                       lower.contains("fc27") || lower.contains("buaksam") || lower.contains("memleket") ||
+                                       lower.contains("haftalik") || lower.contains("canlimac") || lower.contains("thumbnail") ||
+                                       lower.contains("aereport") || lower.hasSuffix(".aeplogs")
+                        if !isRender {
+                            continue
+                        }
+                    }
+                    
+                    var isDir: ObjCBool = false
+                    if fm.fileExists(atPath: itemPath, isDirectory: &isDir) {
+                        let size = isDir.boolValue ? Self.calculateFolderSize(at: itemPath) : ((try? fm.attributesOfItem(atPath: itemPath)[.size] as? NSNumber)?.int64Value ?? 0)
+                        do {
+                            try fm.removeItem(atPath: itemPath)
+                            freedBytes += size
+                            deletedCount += 1
+                        } catch {}
+                    }
+                }
+            }
+            
+            let formattedFreed = ByteCountFormatter.string(fromByteCount: freedBytes, countStyle: .file)
+            DispatchQueue.main.async {
+                self.isCleaningRenderCache = false
+                self.lastCleanedStatus = "✓ \(deletedCount) öğe silindi, \(formattedFreed) alan kazanıldı!"
+                self.addConsoleLog("[Render Cache] Temizleme tamamlandı: \(deletedCount) öğe silindi, \(formattedFreed) disk alanı boşaltıldı.")
+                if NSSound(named: "Trash")?.play() != true { NSSound.beep() }
+                self.scanRenderCache()
+            }
+        }
+    }
+
 }

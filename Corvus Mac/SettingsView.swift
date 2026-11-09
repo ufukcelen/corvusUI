@@ -73,6 +73,79 @@ struct SettingsView: View {
                 
                 updateHubCard
                 
+                // MARK: - Render Cache Cleaner Card
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Render & Önbellek Yönetimi")
+                                .font(.headline)
+                                .foregroundColor(AppTheme.textPrimary)
+                            Text("Masaüstü render çıktıları ve After Effects disk önbelleklerini temizleyin")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.textMuted)
+                        }
+                        Spacer()
+                        if manager.renderCacheTotalSizeBytes > 0 {
+                            Text(ByteCountFormatter.string(fromByteCount: manager.renderCacheTotalSizeBytes, countStyle: .file))
+                                .font(.subheadline.weight(.bold))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(AppTheme.accentRose.opacity(0.18))
+                                .foregroundColor(AppTheme.accentRose)
+                                .clipShape(Capsule())
+                        }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Hedef Render Klasörü")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
+                        
+                        HStack {
+                            TextField("Klasör Yolu", text: $manager.renderCacheFolderPath)
+                                .textFieldStyle(.roundedBorder)
+                            
+                            Button("Gözat...") {
+                                chooseRenderCacheFolder()
+                            }
+                        }
+                    }
+                    
+                    HStack {
+                        if let s = manager.lastCleanedStatus {
+                            Text(s)
+                                .font(.caption.weight(.medium))
+                                .foregroundColor(AppTheme.accentGreen)
+                        } else {
+                            Text("\(manager.renderCacheFileCount) öğe silinmeye aday")
+                                .font(.caption)
+                                .foregroundColor(AppTheme.textMuted)
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            manager.scanRenderCache()
+                        } label: {
+                            Label("Yenile", systemImage: "arrow.clockwise")
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button {
+                            manager.clearRenderCache()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "trash.fill")
+                                Text("Klasörü Temizle")
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(AppTheme.accentRose)
+                        .disabled(manager.isCleaningRenderCache || manager.renderCacheItems.isEmpty)
+                    }
+                }
+                .corvusCard(padding: 20, radius: 16)
+                
                 // MARK: - Paths Configuration Card
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Dosya ve Komut Satırı Yolları")
@@ -527,6 +600,17 @@ struct SettingsView: View {
                         .stroke(AppTheme.borderSubtle, lineWidth: 1)
                 )
         )
+    }
+    
+    private func chooseRenderCacheFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Render Klasörünü Seç"
+        if panel.runModal() == .OK, let url = panel.url {
+            manager.renderCacheFolderPath = url.path
+        }
     }
     
     private func chooseFolder() {

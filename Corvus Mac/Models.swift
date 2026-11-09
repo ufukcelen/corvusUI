@@ -247,3 +247,36 @@ struct ProgramChoice: Identifiable, Hashable {
         ProgramChoice(id: "Aklımdaki Filmler", title: "Aklımdaki Filmler", category: "Radio Mocas", defaultTime: "21:00", icon: "film.fill")
     ]
 }
+
+// MARK: - Render Cache Item
+struct RenderCacheItem: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let path: String
+    let sizeBytes: Int64
+    let isDirectory: Bool
+    let modDate: Date?
+    
+    var formattedSize: String {
+        ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file)
+    }
+    
+    var iconName: String {
+        if isDirectory {
+            return "folder.fill"
+        }
+        let ext = (name as NSString).pathExtension.lowercased()
+        switch ext {
+        case "mp4", "mov", "avi", "m4v":
+            return "film.fill"
+        case "jpg", "jpeg", "png", "psd":
+            return "photo.fill"
+        case "txt", "json", "log":
+            return "doc.text.fill"
+        case "aep":
+            return "play.rectangle.fill"
+        default:
+            return "doc.fill"
+        }
+    }
+}

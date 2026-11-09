@@ -231,6 +231,22 @@ struct ContentView: View {
                         }
                     }
                     
+                    NavigationLink(value: "render_cache") {
+                        HStack {
+                            Label("Render Cache", systemImage: "trash.fill")
+                            Spacer()
+                            if manager.renderCacheTotalSizeBytes > 0 {
+                                Text(ByteCountFormatter.string(fromByteCount: manager.renderCacheTotalSizeBytes, countStyle: .file))
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(AppTheme.accentRose.opacity(0.18))
+                                    .foregroundColor(AppTheme.accentRose)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                    
                     NavigationLink(value: "settings") {
                         Label("Ayarlar", systemImage: "gearshape.fill")
                     }
@@ -307,6 +323,8 @@ struct ContentView: View {
             ThumbnailStudioView()
         case "console":
             ConsoleView()
+        case "render_cache":
+            RenderCacheView()
         case "settings":
             SettingsView()
         default:
