@@ -229,10 +229,7 @@ struct DashboardView: View {
             
             Spacer()
             
-            Circle()
-                .fill(status ? AppTheme.accentGreen : AppTheme.accentRose)
-                .frame(width: 8, height: 8)
-                .corvusGlow(color: status ? AppTheme.accentGreen : AppTheme.accentRose, radius: 4)
+            StatusPulseDot(status: status, size: 8)
         }
         .padding(12)
         .background(

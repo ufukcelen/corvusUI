@@ -42,10 +42,7 @@ struct ThumbnailStudioView: View {
                     
                     // Photoshop Status Badge
                     HStack(spacing: 8) {
-                        Circle()
-                            .fill(manager.photoshopFound ? AppTheme.accentGreen : AppTheme.accentRose)
-                            .frame(width: 8, height: 8)
-                            .corvusGlow(color: manager.photoshopFound ? AppTheme.accentGreen : AppTheme.accentRose, radius: 4)
+                        StatusPulseDot(status: manager.photoshopFound, size: 8)
                         
                         Text(manager.photoshopFound ? manager.photoshopAppName : "Photoshop Bulunamadı")
                             .font(.caption.weight(.semibold))

@@ -15,10 +15,19 @@ struct ContentView: View {
         NavigationSplitView {
             sidebarContent
                 .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 300)
-                .background(AppTheme.sidebarBg)
+                .background(
+                    ZStack {
+                        manager.appThemeMode.sidebarBg
+                        if manager.appThemeMode.hasGrain {
+                            ThemeGrainOverlay(opacity: manager.appThemeMode.grainOpacity)
+                        }
+                    }
+                )
         } detail: {
             detailContent
-                .background(AppTheme.bg.ignoresSafeArea())
+                .background(
+                    CorvusBackdropView(theme: manager.appThemeMode)
+                )
         }
         .frame(minWidth: 960, minHeight: 640)
         .overlay {
@@ -223,10 +232,7 @@ struct ContentView: View {
                             Label("Konsol & Çıktılar", systemImage: "terminal.fill")
                             Spacer()
                             if manager.isRunningTask {
-                                Circle()
-                                    .fill(AppTheme.accentCyan)
-                                    .frame(width: 8, height: 8)
-                                    .corvusGlow(color: AppTheme.accentCyan, radius: 4)
+                                StatusPulseDot(status: true, customColor: manager.appThemeMode.accentPrimary, size: 8)
                             }
                         }
                     }

@@ -333,7 +333,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.1.6"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.1.7"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -490,47 +490,71 @@ struct SettingsView: View {
     private func themeSelectionCard(_ mode: AppThemeMode) -> some View {
         let isSelected = manager.appThemeMode == mode
         return Button {
-            manager.appThemeMode = mode
+            withAnimation(.easeInOut(duration: 0.2)) {
+                manager.appThemeMode = mode
+            }
         } label: {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(isSelected ? AppTheme.accentCyan.opacity(0.2) : AppTheme.surfaceElevated)
-                        .frame(width: 36, height: 36)
+                        .fill(isSelected ? mode.accentPrimary.opacity(0.25) : AppTheme.surfaceElevated)
+                        .frame(width: 38, height: 38)
                     Image(systemName: mode.icon)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(isSelected ? AppTheme.accentCyan : AppTheme.textSecondary)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(isSelected ? mode.accentPrimary : AppTheme.textSecondary)
                 }
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(mode.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(AppTheme.textPrimary)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(mode.title)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundColor(AppTheme.textPrimary)
+                        
+                        if mode.hasGrain {
+                            Text("DOKU")
+                                .font(.system(size: 8, weight: .black))
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(mode.accentPrimary.opacity(0.15))
+                                .foregroundColor(mode.accentPrimary)
+                                .clipShape(Capsule())
+                        }
+                    }
                     
-                    Text(mode == .obsidian ? "Modern Koyu Gri & Cam" :
-                         mode == .oled ? "Saf Siyah & Maksimum Kontrast" :
-                         mode == .midnight ? "Derin Uzay Mavisi Tonları" : "macOS Temasını Takip Et")
+                    Text(mode.subtitle)
                         .font(.system(size: 11))
                         .foregroundColor(AppTheme.textMuted)
                         .lineLimit(1)
+                    
+                    // Palette Preview Swatch Dots
+                    HStack(spacing: 4) {
+                        Circle().fill(mode.bg).frame(width: 8, height: 8).overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 0.5))
+                        Circle().fill(mode.surface).frame(width: 8, height: 8)
+                        Circle().fill(mode.accentPrimary).frame(width: 8, height: 8)
+                        Circle().fill(mode.accentSecondary).frame(width: 8, height: 8)
+                        if mode.hasGrain {
+                            Circle().fill(mode.accentTertiary).frame(width: 8, height: 8)
+                        }
+                    }
+                    .padding(.top, 2)
                 }
                 
                 Spacer()
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(AppTheme.accentCyan)
+                        .foregroundColor(mode.accentPrimary)
                         .font(.title3)
                 }
             }
             .padding(12)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? AppTheme.accentCyan.opacity(0.1) : AppTheme.surfaceElevated)
+                RoundedRectangle(cornerRadius: mode.defaultCornerRadius)
+                    .fill(isSelected ? mode.accentPrimary.opacity(0.10) : AppTheme.surfaceElevated)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? AppTheme.accentCyan : AppTheme.border, lineWidth: isSelected ? 1.5 : 1)
+                RoundedRectangle(cornerRadius: mode.defaultCornerRadius)
+                    .stroke(isSelected ? mode.accentPrimary : AppTheme.border, lineWidth: isSelected ? 1.5 : 1)
             )
         }
         .buttonStyle(.plain)

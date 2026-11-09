@@ -83,10 +83,7 @@ struct ChatView: View {
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
                     
-                    Circle()
-                        .fill(AppTheme.accentGreen)
-                        .frame(width: 8, height: 8)
-                        .corvusGlow(color: AppTheme.accentGreen, radius: 4)
+                    StatusPulseDot(status: true, size: 8)
                 }
                 
                 Text("Ufuk Çelen & Mustafa Yiğit Kızılel & Cem Yıldırım")
