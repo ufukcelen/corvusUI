@@ -12,23 +12,18 @@ struct ContentView: View {
     @State private var selectedTab: String? = "dashboard"
     
     var body: some View {
+        let theme = manager.appThemeMode
+        
         NavigationSplitView {
             sidebarContent
                 .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 300)
-                .background(
-                    ZStack {
-                        manager.appThemeMode.sidebarBg
-                        if manager.appThemeMode.hasGrain {
-                            ThemeGrainOverlay(opacity: manager.appThemeMode.grainOpacity)
-                        }
-                    }
-                )
         } detail: {
             detailContent
                 .background(
-                    CorvusBackdropView(theme: manager.appThemeMode)
+                    CorvusBackdropView(theme: theme)
                 )
         }
+        .tint(theme.accentPrimary)
         .frame(minWidth: 960, minHeight: 640)
         .overlay {
             if manager.isAutoUpdating {
@@ -39,28 +34,28 @@ struct ContentView: View {
                     VStack(spacing: 20) {
                         ProgressView()
                             .controlSize(.large)
-                            .tint(AppTheme.accentCyan)
+                            .tint(theme.accentPrimary)
                         
                         VStack(spacing: 8) {
                             Text("Corvus Mac Güncelleniyor")
                                 .font(.title3.weight(.bold))
-                                .foregroundColor(AppTheme.textPrimary)
+                                .foregroundColor(theme.textPrimary)
                             
                             Text(manager.autoUpdateStatus ?? "Yeni sürüm indiriliyor ve kuruluyor...")
                                 .font(.subheadline)
-                                .foregroundColor(AppTheme.textSecondary)
+                                .foregroundColor(theme.textSecondary)
                                 .multilineTextAlignment(.center)
                                 .frame(maxWidth: 360)
                         }
                     }
                     .padding(32)
-                    .background(AppTheme.surfaceElevated)
+                    .background(theme.surfaceElevated)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(AppTheme.accentCyan.opacity(0.3), lineWidth: 1.5)
+                            .stroke(theme.accentPrimary.opacity(0.3), lineWidth: 1.5)
                     )
                     .cornerRadius(16)
-                    .corvusGlow(color: AppTheme.accentCyan, radius: 24, opacity: 0.3)
+                    .corvusGlow(color: theme.accentPrimary, radius: 24, opacity: 0.3)
                     .shadow(radius: 30)
                 }
             }
@@ -73,16 +68,16 @@ struct ContentView: View {
                             .controlSize(.small)
                         Text(manager.currentTaskTitle ?? "İşlem Yürütülüyor...")
                             .font(.caption.weight(.medium))
-                            .foregroundColor(AppTheme.accentCyan)
+                            .foregroundColor(theme.accentPrimary)
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
-                    .background(AppTheme.accentCyan.opacity(0.12))
+                    .background(theme.accentPrimary.opacity(0.12))
                     .overlay(
-                        Capsule().stroke(AppTheme.accentCyan.opacity(0.3), lineWidth: 1)
+                        Capsule().stroke(theme.accentPrimary.opacity(0.3), lineWidth: 1)
                     )
                     .clipShape(Capsule())
-                    .corvusGlow(color: AppTheme.accentCyan, radius: 6)
+                    .corvusGlow(color: theme.accentPrimary, radius: 6)
                 }
                 
                 // Theme Quick Switcher
@@ -90,7 +85,9 @@ struct ContentView: View {
                     Section("Karanlık Mod Temaları") {
                         ForEach(AppThemeMode.allCases) { mode in
                             Button {
-                                manager.appThemeMode = mode
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    manager.appThemeMode = mode
+                                }
                             } label: {
                                 HStack {
                                     Label(mode.title, systemImage: mode.icon)
@@ -103,7 +100,7 @@ struct ContentView: View {
                     }
                 } label: {
                     Image(systemName: manager.appThemeMode.icon)
-                        .foregroundColor(.primary)
+                        .foregroundColor(theme.accentPrimary)
                 }
                 .help("Tema Seçimi: \(manager.appThemeMode.title)")
                 
@@ -111,6 +108,7 @@ struct ContentView: View {
                     Task { await manager.syncAll() }
                 } label: {
                     Image(systemName: "arrow.clockwise")
+                        .foregroundColor(theme.textSecondary)
                 }
                 .help("Canlı Verileri Eşitle")
             }
@@ -119,14 +117,15 @@ struct ContentView: View {
     
     // MARK: - Sidebar
     private var sidebarContent: some View {
-        VStack(spacing: 0) {
+        let theme = manager.appThemeMode
+        return VStack(spacing: 0) {
             // App Branding
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(
                             LinearGradient(
-                                colors: [AppTheme.accentCyan.opacity(0.3), AppTheme.accentPurple.opacity(0.3)],
+                                colors: [theme.accentPrimary.opacity(0.35), theme.accentSecondary.opacity(0.25)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -134,7 +133,7 @@ struct ContentView: View {
                         .frame(width: 36, height: 36)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                .stroke(theme.cardBorderColor, lineWidth: 1)
                         )
                     
                     Image("CorvusLogo")
@@ -143,21 +142,21 @@ struct ContentView: View {
                         .frame(width: 28, height: 28)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
-                .corvusGlow(color: AppTheme.accentCyan, radius: 6, opacity: 0.25)
+                .corvusGlow(color: theme.accentPrimary, radius: 6, opacity: 0.25)
                 
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 6) {
                         Text("Corvus")
                             .font(.headline.weight(.bold))
-                            .foregroundColor(AppTheme.textPrimary)
+                            .foregroundColor(theme.textPrimary)
                         
                         Circle()
-                            .fill(AppTheme.accentGreen)
+                            .fill(theme.accentTertiary)
                             .frame(width: 6, height: 6)
                     }
                     Text("Otomasyon Stüdyosu")
                         .font(.caption2)
-                        .foregroundColor(AppTheme.textMuted)
+                        .foregroundColor(theme.textMuted)
                 }
                 Spacer()
             }
@@ -166,108 +165,50 @@ struct ContentView: View {
             .padding(.bottom, 12)
             
             Divider()
-                .overlay(AppTheme.border)
+                .overlay(theme.cardBorderColor)
             
-            // Navigation List
-            List(selection: $selectedTab) {
-                Section("Genel") {
-                    NavigationLink(value: "dashboard") {
-                        Label("Genel Bakış", systemImage: "square.grid.2x2.fill")
+            // Custom Navigation Items
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    sidebarSection("Genel", theme: theme) {
+                        sidebarItem(id: "dashboard", title: "Genel Bakış", icon: "square.grid.2x2.fill", theme: theme)
+                        sidebarItem(id: "calendar", title: "Takvim & Yayınlar", icon: "calendar",
+                                    badge: !manager.calendarItems.isEmpty ? "\(manager.calendarItems.count)" : nil,
+                                    theme: theme)
+                        sidebarItem(id: "chat", title: "Ekip Sohbeti", icon: "bubble.left.and.bubble.right.fill",
+                                    badge: !manager.chatMessages.isEmpty ? "\(manager.chatMessages.count)" : nil,
+                                    theme: theme)
+                        sidebarItem(id: "notification", title: "Bildirim Gönder", icon: "paperplane.fill", theme: theme)
                     }
                     
-                    NavigationLink(value: "calendar") {
-                        HStack {
-                            Label("Takvim & Yayınlar", systemImage: "calendar")
-                            Spacer()
-                            if !manager.calendarItems.isEmpty {
-                                Text("\(manager.calendarItems.count)")
-                                    .font(.caption2.weight(.bold))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(AppTheme.accentCyan.opacity(0.15))
-                                    .foregroundColor(AppTheme.accentCyan)
-                                    .clipShape(Capsule())
-                            }
-                        }
+                    sidebarSection("Stüdyolar", theme: theme) {
+                        sidebarItem(id: "uykusuz_tosba", title: "Uykusuz Tosba", icon: "tortoise.fill", theme: theme)
+                        sidebarItem(id: "radio_mocas", title: "Radio Mocas", icon: "antenna.radiowaves.left.and.right", theme: theme)
+                        sidebarItem(id: "photoshop", title: "Photoshop Thumb", icon: "photo.stack.fill", theme: theme)
                     }
                     
-                    NavigationLink(value: "chat") {
-                        HStack {
-                            Label("Ekip Sohbeti", systemImage: "bubble.left.and.bubble.right.fill")
-                            Spacer()
-                            if !manager.chatMessages.isEmpty {
-                                Text("\(manager.chatMessages.count)")
-                                    .font(.caption2.weight(.bold))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Color.secondary.opacity(0.15))
-                                    .foregroundColor(.secondary)
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-                    
-                    NavigationLink(value: "notification") {
-                        Label("Bildirim Gönder", systemImage: "paperplane.fill")
+                    sidebarSection("Sistem", theme: theme) {
+                        sidebarItem(id: "console", title: "Konsol & Çıktılar", icon: "terminal.fill",
+                                    isPulse: manager.isRunningTask, theme: theme)
+                        sidebarItem(id: "render_cache", title: "Render Cache", icon: "trash.fill",
+                                    badge: manager.renderCacheTotalSizeBytes > 0 ? ByteCountFormatter.string(fromByteCount: manager.renderCacheTotalSizeBytes, countStyle: .file) : nil,
+                                    badgeColor: AppTheme.accentRose,
+                                    theme: theme)
+                        sidebarItem(id: "settings", title: "Ayarlar", icon: "gearshape.fill", theme: theme)
                     }
                 }
-                
-                Section("Stüdyolar") {
-                    NavigationLink(value: "uykusuz_tosba") {
-                        Label("Uykusuz Tosba", systemImage: "tortoise.fill")
-                    }
-                    
-                    NavigationLink(value: "radio_mocas") {
-                        Label("Radio Mocas", systemImage: "antenna.radiowaves.left.and.right")
-                    }
-                    
-                    NavigationLink(value: "photoshop") {
-                        Label("Photoshop Thumb", systemImage: "photo.stack.fill")
-                    }
-                }
-                
-                Section("Sistem") {
-                    NavigationLink(value: "console") {
-                        HStack {
-                            Label("Konsol & Çıktılar", systemImage: "terminal.fill")
-                            Spacer()
-                            if manager.isRunningTask {
-                                StatusPulseDot(status: true, customColor: manager.appThemeMode.accentPrimary, size: 8)
-                            }
-                        }
-                    }
-                    
-                    NavigationLink(value: "render_cache") {
-                        HStack {
-                            Label("Render Cache", systemImage: "trash.fill")
-                            Spacer()
-                            if manager.renderCacheTotalSizeBytes > 0 {
-                                Text(ByteCountFormatter.string(fromByteCount: manager.renderCacheTotalSizeBytes, countStyle: .file))
-                                    .font(.caption2.weight(.bold))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(AppTheme.accentRose.opacity(0.18))
-                                    .foregroundColor(AppTheme.accentRose)
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-                    
-                    NavigationLink(value: "settings") {
-                        Label("Ayarlar", systemImage: "gearshape.fill")
-                    }
-                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 14)
             }
-            .listStyle(.sidebar)
             
             Divider()
-                .overlay(AppTheme.border)
+                .overlay(theme.cardBorderColor)
             
             // Bottom Active User Widget
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(manager.currentUser.themeColor.opacity(0.15))
+                        .fill(manager.currentUser.themeColor.opacity(0.18))
                         .frame(width: 32, height: 32)
                     Image(systemName: manager.currentUser.avatarSystemImage)
                         .font(.callout)
@@ -277,10 +218,10 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(manager.currentUser.name)
                         .font(.caption.weight(.bold))
-                        .foregroundColor(AppTheme.textPrimary)
+                        .foregroundColor(theme.textPrimary)
                     Text(manager.currentUser == .ufuk ? "1. Kullanıcı" : "2. Kullanıcı")
                         .font(.system(size: 10))
-                        .foregroundColor(AppTheme.textMuted)
+                        .foregroundColor(theme.textMuted)
                 }
                 
                 Spacer()
@@ -290,22 +231,69 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.caption)
-                        .foregroundColor(AppTheme.textSecondary)
+                        .foregroundColor(theme.textSecondary)
                         .padding(6)
-                        .background(AppTheme.surfaceElevated)
+                        .background(theme.surfaceElevated)
                         .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(theme.cardBorderColor, lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
                 .help("Kullanıcıyı \(manager.currentUser.otherUser.name) olarak değiştir")
             }
             .padding(12)
-            .background(AppTheme.surface.opacity(0.85))
-            .overlay(
-                Rectangle()
-                    .frame(height: 1)
-                    .foregroundColor(AppTheme.border),
-                alignment: .top
-            )
+            .background(theme.surface.opacity(0.70))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            ZStack {
+                theme.sidebarBg
+                if theme.hasGrain {
+                    ThemeGrainOverlay(opacity: theme.grainOpacity)
+                }
+            }
+            .ignoresSafeArea()
+        )
+    }
+    
+    private func sidebarSection<Content: View>(_ title: String, theme: AppThemeMode, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title.uppercased())
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1.2)
+                .foregroundColor(theme.textMuted)
+                .padding(.horizontal, 10)
+                .padding(.top, 4)
+                .padding(.bottom, 2)
+            
+            content()
+        }
+    }
+    
+    private func sidebarItem(
+        id: String,
+        title: String,
+        icon: String,
+        badge: String? = nil,
+        badgeColor: Color? = nil,
+        isPulse: Bool = false,
+        theme: AppThemeMode
+    ) -> some View {
+        SidebarNavItemView(
+            id: id,
+            title: title,
+            icon: icon,
+            badge: badge,
+            badgeColor: badgeColor,
+            isPulse: isPulse,
+            isSelected: selectedTab == id,
+            theme: theme
+        ) {
+            withAnimation(.easeInOut(duration: 0.16)) {
+                selectedTab = id
+            }
         }
     }
     
@@ -339,6 +327,106 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
+// MARK: - Thematic Sidebar Navigation Item View
+struct SidebarNavItemView: View {
+    let id: String
+    let title: String
+    let icon: String
+    var badge: String? = nil
+    var badgeColor: Color? = nil
+    var isPulse: Bool = false
+    let isSelected: Bool
+    let theme: AppThemeMode
+    let action: () -> Void
+    
+    @State private var isHovered: Bool = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 11) {
+                // Icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: max(6, theme.defaultCornerRadius - 4))
+                        .fill(isSelected ? theme.accentPrimary.opacity(0.20) : (isHovered ? theme.surfaceHover : Color.clear))
+                        .frame(width: 28, height: 28)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 13, weight: isSelected ? .bold : .semibold))
+                        .foregroundColor(isSelected ? theme.accentPrimary : (isHovered ? theme.textPrimary : theme.accentPrimary.opacity(0.80)))
+                }
+                
+                Text(title)
+                    .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                    .foregroundColor(isSelected ? theme.textPrimary : (isHovered ? theme.textPrimary : theme.textSecondary))
+                
+                Spacer()
+                
+                if isPulse {
+                    StatusPulseDot(status: true, customColor: theme.accentPrimary, size: 7)
+                }
+                
+                if let badge = badge, !badge.isEmpty {
+                    let bColor = badgeColor ?? theme.accentPrimary
+                    Text(badge)
+                        .font(.system(size: 10, weight: .bold))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(bColor.opacity(isSelected ? 0.30 : 0.16))
+                        .foregroundColor(bColor)
+                        .overlay(
+                            Capsule()
+                                .stroke(bColor.opacity(0.35), lineWidth: 0.8)
+                        )
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: theme.defaultCornerRadius)
+                    .fill(isSelected ? theme.accentPrimary.opacity(0.18) : (isHovered ? theme.surfaceHover.opacity(0.60) : Color.clear))
+            )
+            .overlay(
+                sidebarItemBorder(for: theme, isSelected: isSelected)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                isHovered = hovering
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func sidebarItemBorder(for theme: AppThemeMode, isSelected: Bool) -> some View {
+        if isSelected {
+            switch theme {
+            case .futuristic:
+                RoundedRectangle(cornerRadius: theme.defaultCornerRadius)
+                    .stroke(theme.accentPrimary, lineWidth: 1.2)
+                    .corvusGlow(color: theme.accentPrimary, radius: 6, opacity: 0.45)
+            case .byzantine, .vintageManor:
+                ZStack {
+                    RoundedRectangle(cornerRadius: theme.defaultCornerRadius)
+                        .stroke(theme.accentPrimary.opacity(0.65), lineWidth: 1.2)
+                    RoundedRectangle(cornerRadius: max(2, theme.defaultCornerRadius - 2))
+                        .stroke(theme.accentPrimary.opacity(0.25), lineWidth: 0.6)
+                        .padding(2)
+                }
+            case .medieval:
+                RoundedRectangle(cornerRadius: theme.defaultCornerRadius)
+                    .stroke(theme.accentPrimary.opacity(0.55), lineWidth: 1.2)
+            default:
+                RoundedRectangle(cornerRadius: theme.defaultCornerRadius)
+                    .stroke(theme.accentPrimary.opacity(0.40), lineWidth: 1)
+            }
+        } else if isHovered {
+            RoundedRectangle(cornerRadius: theme.defaultCornerRadius)
+                .stroke(theme.cardBorderColor.opacity(0.45), lineWidth: 0.8)
+        } else {
+            EmptyView()
+        }
+    }
 }

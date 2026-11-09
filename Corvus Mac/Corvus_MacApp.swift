@@ -24,6 +24,7 @@ struct Corvus_MacApp: App {
             ContentView()
                 .frame(minWidth: 980, idealWidth: 1100, minHeight: 640, idealHeight: 740)
                 .preferredColorScheme(manager.appThemeMode.colorScheme)
+                .tint(manager.appThemeMode.accentPrimary)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
