@@ -19,7 +19,7 @@ final class CorvusManager: ObservableObject {
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
     var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.3"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.4"
     }
     let engineVersion = "1.5.1"
     
@@ -132,8 +132,9 @@ final class CorvusManager: ObservableObject {
     
     // MARK: - Smart Path Detection
     static func detectBestProjectPath() -> String {
-        // 1. Saved custom path in UserDefaults (if valid)
+        // 1. Saved custom path in UserDefaults (if valid and not Application Support directory)
         if let saved = UserDefaults.standard.string(forKey: "CorvusProjectPath"),
+           !saved.contains("Library/Application Support/Corvus"),
            FileManager.default.fileExists(atPath: (saved as NSString).appendingPathComponent("corvus.py")) {
             return saved
         }
@@ -150,25 +151,49 @@ final class CorvusManager: ObservableObject {
             }
         }
         
-        // 3. Application Support Corvus Engine (Writable directory for distributed app)
+        // 3. Application Support Corvus Engine (Sync with app bundle on each launch)
         let appSupportDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?.appendingPathComponent("Corvus/Engine")
-        if let appSupportPath = appSupportDir?.path,
-           FileManager.default.fileExists(atPath: (appSupportPath as NSString).appendingPathComponent("corvus.py")) {
-            return appSupportPath
-        }
-        
-        // 4. Bundled inside .app Resources/CorvusEngine -> copy to Application Support for write access
         if let bundleEnginePath = Bundle.main.path(forResource: "CorvusEngine", ofType: nil),
            let appSupportDir = appSupportDir {
             let targetPath = appSupportDir.path
+            let bundleCorvusPy = (bundleEnginePath as NSString).appendingPathComponent("corvus.py")
+            let targetCorvusPy = (targetPath as NSString).appendingPathComponent("corvus.py")
+            
             if !FileManager.default.fileExists(atPath: targetPath) {
                 try? FileManager.default.createDirectory(at: appSupportDir.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try? FileManager.default.copyItem(atPath: bundleEnginePath, toPath: targetPath)
-                if FileManager.default.fileExists(atPath: (targetPath as NSString).appendingPathComponent("corvus.py")) {
-                    return targetPath
+            } else {
+                // ALWAYS synchronize latest corvus.py from bundle into Application Support
+                if FileManager.default.fileExists(atPath: bundleCorvusPy) {
+                    try? FileManager.default.removeItem(atPath: targetCorvusPy)
+                    try? FileManager.default.copyItem(atPath: bundleCorvusPy, toPath: targetCorvusPy)
+                }
+                // Sync FC Kariyer Duyuru files
+                let bundleFcDir = (bundleEnginePath as NSString).appendingPathComponent("FC Kariyer Duyuru")
+                let targetFcDir = (targetPath as NSString).appendingPathComponent("FC Kariyer Duyuru")
+                if FileManager.default.fileExists(atPath: bundleFcDir) {
+                    if !FileManager.default.fileExists(atPath: targetFcDir) {
+                        try? FileManager.default.copyItem(atPath: bundleFcDir, toPath: targetFcDir)
+                    } else if let items = try? FileManager.default.contentsOfDirectory(atPath: bundleFcDir) {
+                        for item in items {
+                            let src = (bundleFcDir as NSString).appendingPathComponent(item)
+                            let dst = (targetFcDir as NSString).appendingPathComponent(item)
+                            if !FileManager.default.fileExists(atPath: dst) {
+                                try? FileManager.default.copyItem(atPath: src, toPath: dst)
+                            }
+                        }
+                    }
                 }
             }
+            if FileManager.default.fileExists(atPath: (targetPath as NSString).appendingPathComponent("corvus.py")) {
+                return targetPath
+            }
             return bundleEnginePath
+        }
+        
+        if let appSupportPath = appSupportDir?.path,
+           FileManager.default.fileExists(atPath: (appSupportPath as NSString).appendingPathComponent("corvus.py")) {
+            return appSupportPath
         }
         
         return NSHomeDirectory() + "/Desktop"
@@ -429,7 +454,7 @@ final class CorvusManager: ObservableObject {
             await MainActor.run {
                 self.isUpdatingSubmodule = false
                 if self.isNewAppVersionAvailable {
-                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.1.3")) için güncel DMG paketini kurmanız gerekir."
+                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.1.4")) için güncel DMG paketini kurmanız gerekir."
                 } else {
                     self.submoduleUpdateStatus = "✓ Tüm bileşenler başarıyla güncellendi (v\(self.appVersion))!"
                 }
