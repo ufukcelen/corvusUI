@@ -56,7 +56,7 @@ struct RadioMocasView: View {
                     case "albert_cem":
                         AlbertCemCard()
                     case "mocas_bey":
-                        RadioUnderConstructionCard(title: "Mocas Bey ve Radyosu", icon: "radio.fill")
+                        MocasBeyCard()
                     case "aklimdaki_filmler":
                         RadioUnderConstructionCard(title: "Aklımdaki Filmler", icon: "film.fill")
                     default:
@@ -281,6 +281,77 @@ struct AlbertCemCard: View {
                     var args = ["albert_ve_cem", "--saat", broadcastHour]
                     if runRender { args.append("--render") }
                     manager.runBridgeTask(arguments: args, title: "Albert ve Cem (\(broadcastHour))")
+                } label: {
+                    Label("Duyuruyu Başlat", systemImage: "play.fill")
+                        .font(.callout.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(manager.isRunningTask)
+            }
+        }
+        .corvusCard(padding: 24, radius: 16)
+    }
+}
+
+// MARK: - 4. Mocas Bey ve Radyosu Card
+struct MocasBeyCard: View {
+    @ObservedObject var manager = CorvusManager.shared
+    @State private var broadcastHour: String = "21:30"
+    @State private var runRender: Bool = true
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(AppTheme.accentPurple.opacity(0.18))
+                        .frame(width: 50, height: 50)
+                    Image(systemName: "radio.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(AppTheme.accentPurple)
+                }
+                .corvusGlow(color: AppTheme.accentPurple, radius: 6, opacity: 0.25)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Mocas Bey ve Radyosu Duyuru Otomasyonu")
+                        .font(.title3.weight(.bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text("mocasBeysaat.json dosyasını saat ile günceller, After Effects mocasBeyComp renderını başlatır ve mocasBeySeo.txt oluşturur.")
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+            }
+            
+            Divider()
+                .overlay(AppTheme.border)
+            
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 20) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Yayın Saati")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
+                        TextField("21:30", text: $broadcastHour)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 140)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Render")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(AppTheme.textSecondary)
+                        Toggle("AE Render Başlat (Mocas_Bey_*.mp4)", isOn: $runRender)
+                    }
+                }
+            }
+            
+            HStack {
+                Spacer()
+                Button {
+                    var args = ["mocas_bey", "--saat", broadcastHour]
+                    if runRender { args.append("--render") }
+                    manager.runBridgeTask(arguments: args, title: "Mocas Bey ve Radyosu (\(broadcastHour))")
                 } label: {
                     Label("Duyuruyu Başlat", systemImage: "play.fill")
                         .font(.callout.weight(.semibold))
