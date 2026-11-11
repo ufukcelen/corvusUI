@@ -333,7 +333,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.1.9"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.0"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -655,7 +655,7 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
-        ("v0.1.9", "Kasım 2026", [
+        ("v0.2.0", "Kasım 2026", [
             "Radio Mocas stüdyosuna 'Mocas Bey ve Radyosu' duyuru otomasyonu eklendi.",
             "mocasBey27.aep projesi ve mocasBeyComp kompozisyonu için saat güncelleme ve render akışı entegre edildi.",
             "Mocas Bey için YouTube yayın SEO metni üretimi (mocasBeySeo.txt) eklendi."

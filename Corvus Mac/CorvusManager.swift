@@ -19,7 +19,7 @@ final class CorvusManager: ObservableObject {
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
     var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.9"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"
     }
     let engineVersion = "1.5.1"
     
@@ -494,7 +494,7 @@ final class CorvusManager: ObservableObject {
             await MainActor.run {
                 self.isUpdatingSubmodule = false
                 if self.isNewAppVersionAvailable {
-                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.1.9")) için güncel DMG paketini kurmanız gerekir."
+                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.2.0")) için güncel DMG paketini kurmanız gerekir."
                 } else {
                     self.submoduleUpdateStatus = "✓ Tüm bileşenler başarıyla güncellendi (v\(self.appVersion))!"
                 }
