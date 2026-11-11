@@ -231,6 +231,34 @@ struct SettingsView: View {
                 }
                 .corvusCard(padding: 20, radius: 16)
                 
+                // MARK: - Legacy Asset Cleanup & Cloud Maintenance
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .foregroundColor(AppTheme.accentCyan)
+                        Text("Sistem Bakımı & Bulut Geçiş Temizliği")
+                            .font(.headline)
+                            .foregroundColor(AppTheme.textPrimary)
+                    }
+                    
+                    Text("Eski sürümlerden kalan ve artık yerini CorvusCloud bulut havuzuna bırakan yerel uygulama şablonlarını ve sistem geçici dosyalarını temizleyerek disk alanı açar. Masaüstündeki kişisel dosyalarınıza kesinlikle dokunmaz.")
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                    
+                    HStack {
+                        Button {
+                            manager.cleanupLegacyAssets()
+                            saveStatus = "✓ Eski şablon kalıntıları ve geçici dosyalar başarıyla temizlendi!"
+                        } label: {
+                            Label("Eski Kalıntıları ve Şablonları Temizle", systemImage: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Spacer()
+                    }
+                }
+                .corvusCard(padding: 20, radius: 16)
+
                 // MARK: - About & Changelog
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Uygulama Bilgileri")
@@ -333,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.0"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.1"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -655,7 +683,7 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
-        ("v0.2.0", "Kasım 2026", [
+        ("v0.2.1", "Kasım 2026", [
             "Radio Mocas stüdyosuna 'Mocas Bey ve Radyosu' duyuru otomasyonu eklendi.",
             "mocasBey27.aep projesi ve mocasBeyComp kompozisyonu için saat güncelleme ve render akışı entegre edildi.",
             "Mocas Bey için YouTube yayın SEO metni üretimi (mocasBeySeo.txt) eklendi."

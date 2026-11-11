@@ -14,6 +14,12 @@ struct ThumbnailStudioView: View {
     @State private var canliMacId: String = ""
     @State private var canliMacDate: String = ""
     
+    // Dynamic Match Selector State
+    @State private var isLoadingMatches = false
+    @State private var matches: [MatchItem] = []
+    @State private var selectedMatch: MatchItem? = nil
+    @State private var selectedLeagueId: String = ""
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -33,7 +39,7 @@ struct ThumbnailStudioView: View {
                         Text("Photoshop Thumbnail Merkezi")
                             .font(.title2.weight(.bold))
                             .foregroundColor(AppTheme.textPrimary)
-                        Text("Adobe Photoshop JSX otomasyonu ile YouTube kapak görselleri (Thumbnail) üretimi.")
+                        Text("Adobe Photoshop JSX otomasyonu ve CorvusCloud ile YouTube kapak görselleri üretimi.")
                             .font(.subheadline)
                             .foregroundColor(AppTheme.textSecondary)
                     }
@@ -58,16 +64,16 @@ struct ThumbnailStudioView: View {
                 }
                 .corvusCard(padding: 20, radius: 16)
                 
-                // Templates Grid (3 templates from corvus.py)
+                // Templates Grid
                 VStack(spacing: 20) {
                     // 1. Memleket
                     thumbnailCard(
                         title: "1. Filtresiz Memleket Havası",
-                        templateName: "memleketYatay.psd",
+                        templateName: "memleketYatay.psd (CorvusCloud)",
                         outputName: "memleket{no}.jpg",
                         icon: "waveform",
                         color: AppTheme.accentOrange,
-                        description: "Kapak görselinde bölüm numarasını (#..) günceller ve renk1 / renk2 katmanlarına rastgele Hue uygulayarak dinamik renk kombinasyonu üretir."
+                        description: "Kapak görselinde bölüm numarasını (#..) günceller, rastgele dinamik renk kombinasyonu üretir ve masaüstünü kirletmeden sadece nihai JPG görselini kaydeder."
                     ) {
                         HStack(spacing: 12) {
                             TextField("Bölüm No (Örn: 24)", text: $memleketEpisodeNo)
@@ -85,32 +91,94 @@ struct ThumbnailStudioView: View {
                         }
                     }
                     
-                    // 2. Canlı Maç
+                    // 2. Canlı Maç (Akıllı Maç Seçimli)
                     thumbnailCard(
                         title: "2. Canlı Maç Sohbetleri",
-                        templateName: "canlimac.psd",
+                        templateName: "canlimac.psd (CorvusCloud)",
                         outputName: "canlimacyatay.jpg",
                         icon: "tv.fill",
                         color: AppTheme.accentGreen,
-                        description: "Lig/turnuva katmanını (superlig, cl, europa, conf, uluslar) seçer, takımların logolarını optik ağırlıklarına (225px vs 280px) göre Smart Object içine yerleştirir."
+                        description: "Tarihe göre maçları listeler. Takımı seçtiğinizde Maç ID otomatik atanır, turnuva logosu ve takım armaları Smart Object içine yerleştirilir."
                     ) {
-                        HStack(spacing: 12) {
-                            TextField("Tarih (YYYY-MM-DD)", text: $canliMacDate)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 150)
-                            
-                            TextField("Maç ID", text: $canliMacId)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 120)
-                            
-                            Button {
-                                let args = ["canli_thumbnail", "--mac_id", canliMacId, "--tarih", canliMacDate]
-                                manager.runBridgeTask(arguments: args, title: "Canlı Maç Thumbnail: \(canliMacId)")
-                            } label: {
-                                Label("Oluştur", systemImage: "sparkles")
+                        VStack(alignment: .leading, spacing: 14) {
+                            // Date & League row
+                            HStack(spacing: 12) {
+                                TextField("Tarih (YYYY-MM-DD)", text: $canliMacDate)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 150)
+                                
+                                Picker("Lig / Turnuva", selection: $selectedLeagueId) {
+                                    Text("Hepsi (5 Lig)").tag("")
+                                    Text("Süper Lig").tag("203")
+                                    Text("Şampiyonlar Ligi").tag("2")
+                                    Text("Europa Ligi").tag("3")
+                                    Text("Konferans Ligi").tag("848")
+                                    Text("Uluslar Ligi").tag("5")
+                                }
+                                .frame(width: 170)
+                                
+                                Button {
+                                    loadMatches()
+                                } label: {
+                                    if isLoadingMatches {
+                                        ProgressView().controlSize(.small)
+                                    } else {
+                                        Label("Maçları Getir", systemImage: "arrow.clockwise")
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .disabled(isLoadingMatches || manager.isRunningTask)
                             }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(canliMacId.trimmingCharacters(in: .whitespaces).isEmpty || manager.isRunningTask)
+                            
+                            // Matches horizontal scroll or list
+                            if isLoadingMatches {
+                                HStack(spacing: 8) {
+                                    ProgressView().controlSize(.small)
+                                    Text("Karşılaşmalar API'den çekiliyor...").font(.caption).foregroundColor(AppTheme.textSecondary)
+                                }
+                                .padding(.vertical, 4)
+                            } else if !matches.isEmpty {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 10) {
+                                        ForEach(matches) { m in
+                                            matchChipView(m)
+                                        }
+                                    }
+                                    .padding(.vertical, 2)
+                                }
+                            }
+                            
+                            // Selected match summary & action
+                            HStack(spacing: 14) {
+                                if let sel = selectedMatch {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(AppTheme.accentGreen)
+                                        Text("\(sel.home) vs \(sel.away) (\(sel.leagueName))")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundColor(AppTheme.textPrimary)
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(AppTheme.accentGreen.opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                } else {
+                                    TextField("Manuel Maç ID", text: $canliMacId)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 130)
+                                }
+                                
+                                Button {
+                                    let activeId = selectedMatch != nil ? "\(selectedMatch!.id)" : canliMacId
+                                    let args = ["canli_thumbnail", "--mac_id", activeId, "--tarih", canliMacDate]
+                                    let title = selectedMatch != nil ? "Canlı Maç Thumbnail: \(selectedMatch!.home) vs \(selectedMatch!.away)" : "Canlı Maç Thumbnail: \(activeId)"
+                                    manager.runBridgeTask(arguments: args, title: title)
+                                } label: {
+                                    Label("Kapağı Oluştur", systemImage: "sparkles")
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled((selectedMatch == nil && canliMacId.trimmingCharacters(in: .whitespaces).isEmpty) || manager.isRunningTask)
+                            }
                         }
                     }
                     
@@ -121,7 +189,7 @@ struct ThumbnailStudioView: View {
                         outputName: "haftalik_program.jpg",
                         icon: "calendar.badge.clock",
                         color: AppTheme.accentPurple,
-                        description: "haftalık.psd dosyasını Photoshop ile açar ve hiçbir katmanı bozmadan maksimum 12 kalitesinde Masaüstüne kaydeder."
+                        description: "haftalık.psd şablonunu açar ve en yüksek 12 kalitesinde Masaüstüne kaydeder."
                     ) {
                         Button {
                             manager.runBridgeTask(arguments: ["haftalik_thumbnail"], title: "Haftalık Program Thumbnail")
@@ -140,6 +208,99 @@ struct ThumbnailStudioView: View {
             let f = DateFormatter()
             f.dateFormat = "yyyy-MM-dd"
             canliMacDate = f.string(from: Date())
+            loadMatches()
+        }
+    }
+    
+    // MARK: - Match Chip
+    private func matchChipView(_ m: MatchItem) -> some View {
+        let isSelected = selectedMatch?.id == m.id
+        return Button {
+            selectedMatch = m
+            canliMacId = "\(m.id)"
+        } label: {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(m.home) - \(m.away)")
+                        .font(.caption.weight(isSelected ? .bold : .medium))
+                        .foregroundColor(isSelected ? AppTheme.accentGreen : AppTheme.textPrimary)
+                    HStack(spacing: 4) {
+                        Text(m.leagueName)
+                            .font(.system(size: 10))
+                            .foregroundColor(AppTheme.textMuted)
+                        if !m.timeStr.isEmpty {
+                            Text("• \(m.timeStr)")
+                                .font(.system(size: 10))
+                                .foregroundColor(AppTheme.accentOrange)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? AppTheme.accentGreen.opacity(0.18) : AppTheme.surfaceElevated)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? AppTheme.accentGreen : AppTheme.borderSubtle, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Load Matches via Bridge
+    private func loadMatches() {
+        isLoadingMatches = true
+        matches = []
+        selectedMatch = nil
+        
+        let bridgeCandidates = [
+            Bundle.main.path(forResource: "corvus_bridge", ofType: "py"),
+            (manager.corvusProjectPath as NSString).appendingPathComponent("corvus_bridge.py"),
+            (manager.corvusProjectPath as NSString).deletingLastPathComponent.appending("/Corvus Mac/corvus_bridge.py"),
+            "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/Corvus Mac/corvus_bridge.py"
+        ]
+        
+        let bridgeScript = bridgeCandidates.compactMap { $0 }.first { FileManager.default.fileExists(atPath: $0) }
+            ?? "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/Corvus Mac/corvus_bridge.py"
+        
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: manager.pythonExecutablePath)
+        
+        var args = [bridgeScript, "--dir", manager.corvusProjectPath, "get_matches", "--tarih", canliMacDate]
+        if !selectedLeagueId.isEmpty {
+            args.append(contentsOf: ["--league", selectedLeagueId])
+        }
+        proc.arguments = args
+        
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            try? proc.run()
+            proc.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let rawString = String(data: data, encoding: .utf8) {
+                if let openBracket = rawString.firstIndex(of: "["),
+                   let closeBracket = rawString.lastIndex(of: "]"),
+                   openBracket <= closeBracket {
+                    let jsonSub = String(rawString[openBracket...closeBracket])
+                    if let jsonData = jsonSub.data(using: .utf8),
+                       let list = try? JSONDecoder().decode([MatchItem].self, from: jsonData) {
+                        DispatchQueue.main.async {
+                            self.matches = list
+                            self.isLoadingMatches = false
+                        }
+                        return
+                    }
+                }
+            }
+            DispatchQueue.main.async {
+                self.isLoadingMatches = false
+            }
         }
     }
     

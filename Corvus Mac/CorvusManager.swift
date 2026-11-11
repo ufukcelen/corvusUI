@@ -19,7 +19,7 @@ final class CorvusManager: ObservableObject {
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
     var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.1"
     }
     let engineVersion = "1.5.1"
     
@@ -140,6 +140,7 @@ final class CorvusManager: ObservableObject {
         
         // Initial sync
         Task {
+            cleanupLegacyAssets()
             await syncAll()
             startPolling()
             await checkForUpdates()
@@ -223,6 +224,46 @@ final class CorvusManager: ObservableObject {
                         try? fm.copyItem(atPath: src, toPath: dst)
                     }
                 }
+            }
+        }
+    }
+
+    // MARK: - Legacy Cleanup & Maintenance
+    func cleanupLegacyAssets() {
+        let fm = FileManager.default
+        var cleanedCount = 0
+        var freedBytes: Int64 = 0
+        
+        // 1. Scan Application Support / Corvus for legacy .aep, large video caches, logs
+        if let appSupportDir = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?.appendingPathComponent("Corvus") {
+            let legacyFolders = [
+                appSupportDir.appendingPathComponent("Engine/Albert"),
+                appSupportDir.appendingPathComponent("Engine/Mocas Bey"),
+                appSupportDir.appendingPathComponent("Engine/FC Kariyer Duyuru"),
+                appSupportDir.appendingPathComponent("Engine/Memleket Duyuru"),
+                appSupportDir.appendingPathComponent("Engine/Bfü Duyuru Projesi"),
+                appSupportDir.appendingPathComponent("Engine/Tekmaç"),
+            ]
+            
+            for folder in legacyFolders {
+                if fm.fileExists(atPath: folder.path) {
+                    if let size = try? folder.resourceValues(forKeys: [.fileSizeKey]).fileSize {
+                        freedBytes += Int64(size)
+                    }
+                    try? fm.removeItem(at: folder)
+                    cleanedCount += 1
+                }
+            }
+        }
+        
+        // 2. Masaüstündeki hiçbir dosyaya (kullanıcının kendi PSD'leri vb. dahil) KESİNLİKLE DOKUNMAZ!
+        // Sadece sistem geçici dizini (/tmp) altındaki corvus_*.jsx betiklerini temizler.
+        
+        // 3. Clean temporary JSX files in /tmp
+        let tmpDir = URL(fileURLWithPath: "/tmp")
+        if let tmpFiles = try? fm.contentsOfDirectory(at: tmpDir, includingPropertiesForKeys: nil) {
+            for f in tmpFiles where f.lastPathComponent.hasPrefix("corvus_") && f.pathExtension == "jsx" {
+                try? fm.removeItem(at: f)
             }
         }
     }
@@ -494,7 +535,7 @@ final class CorvusManager: ObservableObject {
             await MainActor.run {
                 self.isUpdatingSubmodule = false
                 if self.isNewAppVersionAvailable {
-                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.2.0")) için güncel DMG paketini kurmanız gerekir."
+                    self.submoduleUpdateStatus = "⚠️ CLI Motoru güncellendi. Yeni Mac UI sürümü (\(self.latestAppTag ?? "v0.2.1")) için güncel DMG paketini kurmanız gerekir."
                 } else {
                     self.submoduleUpdateStatus = "✓ Tüm bileşenler başarıyla güncellendi (v\(self.appVersion))!"
                 }
