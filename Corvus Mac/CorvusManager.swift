@@ -184,27 +184,8 @@ final class CorvusManager: ObservableObject {
                 try? FileManager.default.createDirectory(at: appSupportDir.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try? FileManager.default.copyItem(atPath: bundleEnginePath, toPath: targetPath)
             } else {
-                // ALWAYS synchronize latest corvus.py from bundle into Application Support
-                if FileManager.default.fileExists(atPath: bundleCorvusPy) {
-                    try? FileManager.default.removeItem(atPath: targetCorvusPy)
-                    try? FileManager.default.copyItem(atPath: bundleCorvusPy, toPath: targetCorvusPy)
-                }
-                // Sync FC Kariyer Duyuru files
-                let bundleFcDir = (bundleEnginePath as NSString).appendingPathComponent("FC Kariyer Duyuru")
-                let targetFcDir = (targetPath as NSString).appendingPathComponent("FC Kariyer Duyuru")
-                if FileManager.default.fileExists(atPath: bundleFcDir) {
-                    if !FileManager.default.fileExists(atPath: targetFcDir) {
-                        try? FileManager.default.copyItem(atPath: bundleFcDir, toPath: targetFcDir)
-                    } else if let items = try? FileManager.default.contentsOfDirectory(atPath: bundleFcDir) {
-                        for item in items {
-                            let src = (bundleFcDir as NSString).appendingPathComponent(item)
-                            let dst = (targetFcDir as NSString).appendingPathComponent(item)
-                            if !FileManager.default.fileExists(atPath: dst) {
-                                try? FileManager.default.copyItem(atPath: src, toPath: dst)
-                            }
-                        }
-                    }
-                }
+                // ALWAYS recursively synchronize all bundle engine scripts, project templates, and assets into Application Support
+                Self.syncEngineDirectory(from: bundleEnginePath, to: targetPath)
             }
             if FileManager.default.fileExists(atPath: (targetPath as NSString).appendingPathComponent("corvus.py")) {
                 return targetPath
@@ -220,6 +201,32 @@ final class CorvusManager: ObservableObject {
         return NSHomeDirectory() + "/Desktop"
     }
     
+    // Recursively sync engine files from App Bundle into Application Support
+    nonisolated static func syncEngineDirectory(from srcDir: String, to dstDir: String) {
+        let fm = FileManager.default
+        guard let items = try? fm.contentsOfDirectory(atPath: srcDir) else { return }
+        try? fm.createDirectory(atPath: dstDir, withIntermediateDirectories: true)
+        
+        for item in items {
+            if item == ".git" || item == "__pycache__" || item.hasSuffix(".pyc") || item == ".DS_Store" { continue }
+            let src = (srcDir as NSString).appendingPathComponent(item)
+            let dst = (dstDir as NSString).appendingPathComponent(item)
+            
+            var isDir: ObjCBool = false
+            if fm.fileExists(atPath: src, isDirectory: &isDir) {
+                if isDir.boolValue {
+                    syncEngineDirectory(from: src, to: dst)
+                } else {
+                    let shouldUpdate = item.hasSuffix(".py") || item.hasSuffix(".sh") || item.hasSuffix(".command") || !fm.fileExists(atPath: dst)
+                    if shouldUpdate {
+                        try? fm.removeItem(atPath: dst)
+                        try? fm.copyItem(atPath: src, toPath: dst)
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Software & Submodule Updates
     func checkForUpdates() async {
         guard !isCheckingForUpdates else { return }
@@ -440,13 +447,25 @@ final class CorvusManager: ObservableObject {
                 let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
                 logLines.append("[CLI Çekirdeği] " + (out.isEmpty ? "Güncel" : out.trimmingCharacters(in: .whitespacesAndNewlines)))
             } else {
-                // Standalone fallback: Download latest corvus.py from GitHub
+                // Standalone fallback: Download latest corvus.py & corvus_bridge.py from GitHub
                 if let rawUrl = URL(string: "https://raw.githubusercontent.com/ufukcelen/Corvus/main/corvus.py"),
                    let (data, res) = try? await URLSession.shared.data(from: rawUrl),
                    (res as? HTTPURLResponse)?.statusCode == 200 {
                     let targetPath = (engineDir as NSString).appendingPathComponent("corvus.py")
                     try? data.write(to: URL(fileURLWithPath: targetPath))
-                    logLines.append("[CLI Çekirdeği] corvus.py GitHub'dan doğrudan indirildi.")
+                    logLines.append("[CLI Çekirdeği] corvus.py güncellendi.")
+                }
+                if let rawBridgeUrl = URL(string: "https://raw.githubusercontent.com/ufukcelen/Corvus/main/corvus_bridge.py"),
+                   let (dataBridge, resBridge) = try? await URLSession.shared.data(from: rawBridgeUrl),
+                   (resBridge as? HTTPURLResponse)?.statusCode == 200 {
+                    let targetBridgePath = (engineDir as NSString).appendingPathComponent("corvus_bridge.py")
+                    try? dataBridge.write(to: URL(fileURLWithPath: targetBridgePath))
+                    logLines.append("[Köprü] corvus_bridge.py güncellendi.")
+                }
+                // Sync templates from App Bundle into Application Support
+                if let bundleEngine = Bundle.main.path(forResource: "CorvusEngine", ofType: nil) {
+                    Self.syncEngineDirectory(from: bundleEngine, to: engineDir)
+                    logLines.append("[Paket Şablonları] Proje ve şablon varlıkları senkronize edildi.")
                 }
             }
             
