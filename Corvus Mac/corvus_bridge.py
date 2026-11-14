@@ -55,7 +55,7 @@ def ensure_corvus_assets(p_dir):
     # Check if After Effects template needs update by comparing SHA with GitHub
     ae_template = os.path.join(p_dir, "Bfü Duyuru Projesi", "bfuDuyuru2027.aep")
     try:
-        import urllib.request, json, os, hashlib
+        import urllib.request, json, hashlib
         # We can check GitHub API tree or raw size/sha
         api_url = "https://api.github.com/repos/ufukcelen/Corvus/contents/Bf%C3%BC%20Duyuru%20Projesi/bfuDuyuru2027.aep?ref=main"
         req = urllib.request.Request(api_url, headers={"User-Agent": "Mozilla/5.0 (CorvusMac)"})

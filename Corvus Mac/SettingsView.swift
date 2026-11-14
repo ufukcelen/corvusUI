@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.9"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.3.0"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -695,6 +695,10 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.3.0", "Kasım 2026", [
+            "⚡️ Bridge İyileştirmesi: Python başlatıcıdaki kapsam değişkeni (UnboundLocalError) düzeltildi.",
+            "🔄 Canlı Şablon Senkronizasyonu kararlı hale getirildi."
+        ]),
         ("v0.2.9", "Kasım 2026", [
             "✨ Canlı After Effects Şablon Senkronizasyonu: Google Drive / Masaüstünde güncellenen en son 'bfuDuyuru2027.aep' ve 'Bfü Duyuru Projesi' şablonu GitHub üzerinden diğer kullanıcılara (Yiğit) otomatik indirilir.",
             "🚀 Her zaman en güncel kompozisyon ve render kalitesi."
