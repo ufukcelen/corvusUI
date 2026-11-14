@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.2"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.3"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -695,6 +695,11 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.2.3", "Kasım 2026", [
+            "📅 Bugün / Yarın Hızlı Tarih Butonları: Uykusuz Tosba ve Thumbnail Studio maç seçimlerine tek tıkla 'Bugün' ve 'Yarın' karşılaşmalarını getirme eklendi.",
+            "👥 Kadir Var / Kadir Yok (cy) Switch: Canlı Maç Sohbetleri ve Maç Sonu bölümlerinde Kadir olmadığında otomatik cyM/cyK seçimi aktif.",
+            "🔄 Güvenli Güncelleme: Otomatik döngüye girmeden kullanıcı kontrollü güncelleme mimarisine geçildi."
+        ]),
         ("v0.2.2", "Kasım 2026", [
             "👥 Kadir Var / Kadir Yok (cy) Seçici: Canlı maç duyurularında Kadir olmadığında otomatik cyM.png (Uluslar Ligi) ve cyK.png (diğer maçlar) kullanımı eklendi.",
             "☁️ Google Drive Bulut Kafalar Havuzu: cyM ve cyK görselleri doğrudan Google Drive CorvusCloud havuzundan dinamik olarak çekilir."

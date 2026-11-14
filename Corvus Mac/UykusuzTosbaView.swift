@@ -236,10 +236,30 @@ struct CanliMacProgramCard: View {
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
                 
-                HStack(spacing: 14) {
-                    TextField("YYYY-MM-DD (Örn: 2026-10-30)", text: $matchDate)
+                HStack(spacing: 10) {
+                    TextField("YYYY-MM-DD", text: $matchDate)
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 180)
+                        .frame(width: 130)
+                    
+                    Button("Bugün") {
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd"
+                        matchDate = formatter.string(from: Date())
+                        loadMatches()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    
+                    Button("Yarın") {
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd"
+                        if let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) {
+                            matchDate = formatter.string(from: tomorrow)
+                            loadMatches()
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                     
                     Picker("Lig / Turnuva", selection: $selectedLeagueId) {
                         Text("Hepsi (5 Lig)").tag("")

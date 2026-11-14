@@ -102,10 +102,30 @@ struct ThumbnailStudioView: View {
                     ) {
                         VStack(alignment: .leading, spacing: 14) {
                             // Date & League row
-                            HStack(spacing: 12) {
-                                TextField("Tarih (YYYY-MM-DD)", text: $canliMacDate)
+                            HStack(spacing: 8) {
+                                TextField("Tarih", text: $canliMacDate)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(width: 150)
+                                    .frame(width: 110)
+                                
+                                Button("Bugün") {
+                                    let f = DateFormatter()
+                                    f.dateFormat = "yyyy-MM-dd"
+                                    canliMacDate = f.string(from: Date())
+                                    loadMatches()
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                
+                                Button("Yarın") {
+                                    let f = DateFormatter()
+                                    f.dateFormat = "yyyy-MM-dd"
+                                    if let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) {
+                                        canliMacDate = f.string(from: tomorrow)
+                                        loadMatches()
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
                                 
                                 Picker("Lig / Turnuva", selection: $selectedLeagueId) {
                                     Text("Hepsi (5 Lig)").tag("")
