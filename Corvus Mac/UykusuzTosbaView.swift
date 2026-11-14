@@ -538,9 +538,18 @@ struct CanliMacProgramCard: View {
             
             DispatchQueue.main.async {
                 self.isLoadingMatches = false
-                if !errString.isEmpty && !errString.contains("Kalan günlük istek") {
-                    let cleanErr = errString.components(separatedBy: .newlines).filter { !$0.isEmpty }.last ?? errString
-                    self.matchLoadError = "Maç verisi alınamadı: \(cleanErr)"
+                let criticalLines = errString.components(separatedBy: .newlines).filter { line in
+                    let l = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return !l.isEmpty &&
+                           !l.contains("Kalan günlük istek") &&
+                           !l.lowercased().contains("warning") &&
+                           !l.contains("UserWarning") &&
+                           !l.contains("InsecureRequestWarning")
+                }
+                if let lastErr = criticalLines.last {
+                    self.matchLoadError = "Maç verisi alınamadı: \(lastErr)"
+                } else if self.matches.isEmpty {
+                    self.matchLoadError = nil
                 }
             }
         }

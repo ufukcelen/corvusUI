@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings('ignore')
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -73,7 +75,7 @@ def cmd_get_matches(args, corvus, p_dir):
         api_key = corvus.API_KEY or ""
 
     if not api_key:
-        api_key = os.environ.get("API_SPORTS_KEY", "5d0d8fb851211e49ec4e3d36802e3b2b")
+        api_key = os.environ.get("API_SPORTS_KEY", "5d0dbb327a68275b0f6518c1f0a072b5")
 
     def hesapla_sezon(t):
         parts = t.split("-")

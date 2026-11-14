@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.4"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.5"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -695,6 +695,11 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.2.5", "Kasım 2026", [
+            "🔑 API Anahtarı Düzeltmesi: Yedek anahtar dize hatası düzeltildi, harici cihazlarda (Yiğit) kesintisiz maç çekme sağlandı.",
+            "🛡️ Python Warning Filtreleme: Sistemin stderr'e yazdığı urllib/SSL warning mesajlarının yanlışlıkla hata kutusu oluşturması engellendi.",
+            "👥 Kadir Var / Kadir Yok Butonu: Ekranın en tepesinde daima görünür ve hazır."
+        ]),
         ("v0.2.4", "Kasım 2026", [
             "👥 Kadir Var / Kadir Yok (cy) Daima Görünür: Karşılaşma seçilmesini beklemeden 1. Adım başlığında en tepede daima görünür hale getirildi.",
             "🐍 Akıllı Python Algılama: Kullanıcı ortamında (Yiğit'in bilgisayarında) requests kütüphanesi bulunan doğru Python (Homebrew/Sistem) otomatik bulunur.",
