@@ -82,6 +82,7 @@ final class CorvusManager: ObservableObject {
     @Published var lastUpdateCheckDate: Date? = nil
     @Published var latestAppTag: String? = nil
     @Published var isNewAppVersionAvailable: Bool = false
+    @Published var availableUpdateZipUrl: URL? = nil
     @Published var isAutoUpdating: Bool = false
     @Published var autoUpdateStatus: String? = nil
     
@@ -316,14 +317,10 @@ final class CorvusManager: ObservableObject {
             let current = self.appVersion.replacingOccurrences(of: "v", with: "").trimmingCharacters(in: .whitespaces)
             if cleanTag.compare(current, options: .numeric) == .orderedDescending {
                 self.isNewAppVersionAvailable = true
-                
-                // If a downloadable zip release asset is available, perform automatic seamless update!
-                if let assetUrl = downloadZipUrl {
-                    await downloadAndApplyAppUpdate(from: assetUrl, newVersion: releaseTag)
-                    return
-                }
+                self.availableUpdateZipUrl = downloadZipUrl
             } else {
                 self.isNewAppVersionAvailable = false
+                self.availableUpdateZipUrl = nil
             }
         }
         

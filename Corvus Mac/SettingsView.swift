@@ -373,8 +373,14 @@ struct SettingsView: View {
             Spacer()
             
             Button {
-                Task {
-                    await manager.checkForUpdates()
+                if let url = manager.availableUpdateZipUrl, let tag = manager.latestAppTag {
+                    Task {
+                        await manager.downloadAndApplyAppUpdate(from: url, newVersion: tag)
+                    }
+                } else {
+                    Task {
+                        await manager.checkForUpdates()
+                    }
                 }
             } label: {
                 HStack(spacing: 6) {
@@ -481,8 +487,14 @@ struct SettingsView: View {
             Spacer()
             
             Button {
-                Task {
-                    await manager.checkForUpdates()
+                if let url = manager.availableUpdateZipUrl, let tag = manager.latestAppTag {
+                    Task {
+                        await manager.downloadAndApplyAppUpdate(from: url, newVersion: tag)
+                    }
+                } else {
+                    Task {
+                        await manager.checkForUpdates()
+                    }
                 }
             } label: {
                 HStack(spacing: 6) {
