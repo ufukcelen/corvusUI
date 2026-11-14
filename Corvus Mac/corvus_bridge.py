@@ -52,6 +52,29 @@ def ensure_corvus_assets(p_dir):
         except Exception as e:
             sys.stderr.write(f"[CORVUS UYARI] corvus.py guncelleme atlandi: {e}\n")
 
+    # Check if After Effects template needs update by comparing SHA with GitHub
+    ae_template = os.path.join(p_dir, "Bfü Duyuru Projesi", "bfuDuyuru2027.aep")
+    try:
+        import urllib.request, json, os, hashlib
+        # We can check GitHub API tree or raw size/sha
+        api_url = "https://api.github.com/repos/ufukcelen/Corvus/contents/Bf%C3%BC%20Duyuru%20Projesi/bfuDuyuru2027.aep?ref=main"
+        req = urllib.request.Request(api_url, headers={"User-Agent": "Mozilla/5.0 (CorvusMac)"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            meta = json.loads(resp.read().decode("utf-8"))
+            remote_size = meta.get("size")
+            if remote_size and (not os.path.exists(ae_template) or os.path.getsize(ae_template) != remote_size):
+                sys.stderr.write(f"[CORVUS] Guncel After Effects sablonu ({remote_size} byte) GitHub'dan indiriliyor...\n")
+                raw_url = meta.get("download_url") or "https://raw.githubusercontent.com/ufukcelen/Corvus/main/Bf%C3%BC%20Duyuru%20Projesi/bfuDuyuru2027.aep"
+                raw_req = urllib.request.Request(raw_url, headers={"User-Agent": "Mozilla/5.0 (CorvusMac)"})
+                with urllib.request.urlopen(raw_req, timeout=30) as raw_resp:
+                    os.makedirs(os.path.dirname(ae_template), exist_ok=True)
+                    with open(ae_template, "wb") as f_ae:
+                        f_ae.write(raw_resp.read())
+                sys.stderr.write("[CORVUS] Guncel After Effects sablonu basariyla kaydedildi.\n")
+    except Exception as e_ae:
+        # Non-blocking, continue
+        pass
+
     if needs_full_download:
         sys.stderr.write("[CORVUS] Proje dosyalari ve Assets eksik görünüyor, GitHub'dan indiriliyor...\n")
         try:
