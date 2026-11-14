@@ -85,40 +85,36 @@ def cmd_get_matches(args, corvus, p_dir):
 
     sezon_yili = corvus.sezon_hesapla(tarih) if (corvus and hasattr(corvus, "sezon_hesapla")) else hesapla_sezon(tarih)
     
-    if args.league:
-        lig_id = int(args.league)
-        params = {"date": tarih, "league": str(lig_id), "season": sezon_yili, "timezone": "Europe/Istanbul"}
-    else:
-        params = {"date": tarih, "timezone": "Europe/Istanbul"}
+    params = {"date": tarih, "timezone": "Europe/Istanbul"}
 
     tum = []
-    if corvus and hasattr(corvus, "api_maclar"):
+    import urllib.request
+    import urllib.parse
+    qs = urllib.parse.urlencode(params)
+    req = urllib.request.Request(
+        f"https://v3.football.api-sports.io/fixtures?{qs}",
+        headers={"x-apisports-key": api_key, "User-Agent": "Corvus"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            tum = data.get("response", [])
+    except Exception as e:
+        sys.stderr.write(f"API Sports HTTP hatası: {e}\n")
+
+    if not tum and corvus and hasattr(corvus, "api_maclar"):
         try:
             with contextlib.redirect_stdout(sys.stderr):
                 tum = corvus.api_maclar(params)
         except Exception as e:
-            sys.stderr.write(f"corvus.api_maclar hatası: {e}\n")
-
-    if not tum:
-        import urllib.request
-        import urllib.parse
-        qs = urllib.parse.urlencode(params)
-        req = urllib.request.Request(
-            f"https://v3.football.api-sports.io/fixtures?{qs}",
-            headers={"x-apisports-key": api_key, "User-Agent": "Corvus"}
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                tum = data.get("response", [])
-        except Exception as e:
-            sys.stderr.write(f"API Sports HTTP hatası: {e}\n")
+            pass
 
     hepsi_ligler = (corvus.HEPSI_LIG_IDLERI if corvus and hasattr(corvus, "HEPSI_LIG_IDLERI") else [203, 2, 3, 848, 5])
-    if not args.league:
-        maclar = [m for m in tum if m.get("league", {}).get("id") in hepsi_ligler]
+    if args.league:
+        secilen_lig = int(args.league)
+        maclar = [m for m in tum if m.get("league", {}).get("id") == secilen_lig]
     else:
-        maclar = tum
+        maclar = [m for m in tum if m.get("league", {}).get("id") in hepsi_ligler]
 
     sonuc = []
     for m in maclar:
@@ -673,10 +669,8 @@ def main():
         sys.exit(0)
 
     if args.cmd == "get_matches":
-        try:
-            corvus, p_dir = setup_environment(args.dir, silent_error=True)
-        except Exception:
-            corvus, p_dir = None, (args.dir or DEFAULT_PROJECT_DIR)
+        cmd_get_matches(args, None, (args.dir or DEFAULT_PROJECT_DIR))
+        return
     else:
         corvus, p_dir = setup_environment(args.dir)
 

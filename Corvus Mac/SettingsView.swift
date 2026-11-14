@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.5"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.6"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -695,6 +695,11 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.2.6", "Kasım 2026", [
+            "⚡ Bağımsız Maç Arama: get_matches komutu sistem kütüphanelerinden (requests/rich/corvus) tamamen izole edildi; sıfır bağımlılıkla anında sonuç döner.",
+            "🏆 Sezon Filtre Hatası Giderildi: API-Sports fixtures sorgusunda hatalı sezon parametresi kaldırıldı, Uluslar Ligi ve Süper Lig maçları eksiksiz listelenir.",
+            "👥 Kadir Var / Kadir Yok Butonu: 1. Adım Başlığında kalıcı olarak yer alır."
+        ]),
         ("v0.2.5", "Kasım 2026", [
             "🔑 API Anahtarı Düzeltmesi: Yedek anahtar dize hatası düzeltildi, harici cihazlarda (Yiğit) kesintisiz maç çekme sağlandı.",
             "🛡️ Python Warning Filtreleme: Sistemin stderr'e yazdığı urllib/SSL warning mesajlarının yanlışlıkla hata kutusu oluşturması engellendi.",
