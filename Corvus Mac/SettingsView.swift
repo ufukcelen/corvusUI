@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.1"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.2"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -683,6 +683,10 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.2.2", "Kasım 2026", [
+            "👥 Kadir Var / Kadir Yok (cy) Seçici: Canlı maç duyurularında Kadir olmadığında otomatik cyM.png (Uluslar Ligi) ve cyK.png (diğer maçlar) kullanımı eklendi.",
+            "☁️ Google Drive Bulut Kafalar Havuzu: cyM ve cyK görselleri doğrudan Google Drive CorvusCloud havuzundan dinamik olarak çekilir."
+        ]),
         ("v0.2.1", "Kasım 2026", [
             "Radio Mocas stüdyosuna 'Mocas Bey ve Radyosu' duyuru otomasyonu eklendi.",
             "mocasBey27.aep projesi ve mocasBeyComp kompozisyonu için saat güncelleme ve render akışı entegre edildi.",

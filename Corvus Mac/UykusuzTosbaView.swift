@@ -105,6 +105,7 @@ struct HaftalikProgramCard: View {
     @State private var broadcastHour: String = "21:00"
     @State private var runRender: Bool = true
     @State private var runThumbnail: Bool = true
+    @State private var kadirVar: Bool = true
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -197,6 +198,7 @@ struct CanliMacProgramCard: View {
     @State private var broadcastHour: String = ""
     @State private var runRender: Bool = true
     @State private var runThumbnail: Bool = true
+    @State private var kadirVar: Bool = true
     
     var themeAccent: Color {
         isMacSonu ? AppTheme.accentCyan : AppTheme.accentGreen
@@ -302,6 +304,19 @@ struct CanliMacProgramCard: View {
                         
                         Toggle("AE Render", isOn: $runRender)
                         Toggle("Photoshop Thumbnail", isOn: $runThumbnail)
+                        
+                        Divider().frame(height: 18)
+                        
+                        Toggle(isOn: $kadirVar) {
+                            HStack(spacing: 4) {
+                                Image(systemName: kadirVar ? "person.2.fill" : "person.fill")
+                                    .foregroundColor(kadirVar ? AppTheme.accentGreen : AppTheme.accentOrange)
+                                Text(kadirVar ? "Kadir Var" : "Kadir Yok (cy)")
+                                    .fontWeight(.medium)
+                            }
+                        }
+                        .toggleStyle(.button)
+                        .tint(kadirVar ? AppTheme.accentGreen.opacity(0.3) : AppTheme.accentOrange.opacity(0.3))
                     }
                     
                     HStack {
@@ -316,6 +331,7 @@ struct CanliMacProgramCard: View {
                             if isMacSonu { args.append("--mac_sonu") }
                             if runRender { args.append("--render") }
                             if runThumbnail { args.append("--thumbnail") }
+                            if !kadirVar { args.append("--kadir-yok") }
                             
                             let title = "\(isMacSonu ? "Maç Sonu" : "Canlı Maç"): \(sel.home) - \(sel.away)"
                             manager.runBridgeTask(arguments: args, title: title)

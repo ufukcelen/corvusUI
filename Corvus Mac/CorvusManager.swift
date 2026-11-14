@@ -19,7 +19,7 @@ final class CorvusManager: ObservableObject {
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
     var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.1"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.2"
     }
     let engineVersion = "1.5.1"
     
