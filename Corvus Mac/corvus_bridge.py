@@ -31,9 +31,28 @@ DEFAULT_PROJECT_DIR = next((d for d in CANDIDATE_DIRS if os.path.isdir(d)), BRID
 
 
 def ensure_corvus_assets(p_dir):
-    """Ensures that Bfü Duyuru Projesi/Assets exists in p_dir. If missing, auto-downloads from GitHub repository."""
+    """Ensures that Bfü Duyuru Projesi/Assets exists and corvus.py is up to date in p_dir."""
     bfu_assets = os.path.join(p_dir, "Bfü Duyuru Projesi", "Assets")
-    if not os.path.isdir(bfu_assets):
+    needs_full_download = not os.path.isdir(bfu_assets)
+    
+    # Always ensure corvus.py has latest fixes from GitHub
+    corvus_py_path = os.path.join(p_dir, "corvus.py")
+    if os.path.exists(corvus_py_path):
+        try:
+            with open(corvus_py_path, "r", encoding="utf-8") as f_check:
+                if "no output module template was found" not in f_check.read():
+                    sys.stderr.write("[CORVUS] corvus.py guncelleniyor (render sablon duzeltmesi)...\n")
+                    import urllib.request
+                    u = "https://raw.githubusercontent.com/ufukcelen/Corvus/main/corvus.py"
+                    req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        with open(corvus_py_path, "wb") as f_out:
+                            f_out.write(resp.read())
+                    sys.stderr.write("[CORVUS] corvus.py basariyla guncellendi.\n")
+        except Exception as e:
+            sys.stderr.write(f"[CORVUS UYARI] corvus.py guncelleme atlandi: {e}\n")
+
+    if needs_full_download:
         sys.stderr.write("[CORVUS] Proje dosyalari ve Assets eksik görünüyor, GitHub'dan indiriliyor...\n")
         try:
             import urllib.request
