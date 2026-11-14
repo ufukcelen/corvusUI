@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.3"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.2.4"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -695,6 +695,12 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.2.4", "Kasım 2026", [
+            "👥 Kadir Var / Kadir Yok (cy) Daima Görünür: Karşılaşma seçilmesini beklemeden 1. Adım başlığında en tepede daima görünür hale getirildi.",
+            "🐍 Akıllı Python Algılama: Kullanıcı ortamında (Yiğit'in bilgisayarında) requests kütüphanesi bulunan doğru Python (Homebrew/Sistem) otomatik bulunur.",
+            "📅 Bugün / Yarın Hızlı Butonları: Tek tıkla yarının karşılaşmalarını listeleme aktif.",
+            "⚠️ Hata & Boş Durum Geri Bildirimi: Maç bulunamadığında veya API hatasında net görsel bildirim gösterilir."
+        ]),
         ("v0.2.3", "Kasım 2026", [
             "📅 Bugün / Yarın Hızlı Tarih Butonları: Uykusuz Tosba ve Thumbnail Studio maç seçimlerine tek tıkla 'Bugün' ve 'Yarın' karşılaşmalarını getirme eklendi.",
             "👥 Kadir Var / Kadir Yok (cy) Switch: Canlı Maç Sohbetleri ve Maç Sonu bölümlerinde Kadir olmadığında otomatik cyM/cyK seçimi aktif.",

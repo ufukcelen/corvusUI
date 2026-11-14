@@ -286,8 +286,14 @@ struct ThumbnailStudioView: View {
         let bridgeScript = bridgeCandidates.compactMap { $0 }.first { FileManager.default.fileExists(atPath: $0) }
             ?? "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/Corvus Mac/corvus_bridge.py"
         
+        let pythonPath = CorvusManager.detectBestPythonPath()
         let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: manager.pythonExecutablePath)
+        proc.executableURL = URL(fileURLWithPath: pythonPath)
+        
+        var env = ProcessInfo.processInfo.environment
+        env["PYTHONUNBUFFERED"] = "1"
+        env["PATH"] = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:" + (env["PATH"] ?? "")
+        proc.environment = env
         
         var args = [bridgeScript, "--dir", manager.corvusProjectPath, "get_matches", "--tarih", canliMacDate]
         if !selectedLeagueId.isEmpty {

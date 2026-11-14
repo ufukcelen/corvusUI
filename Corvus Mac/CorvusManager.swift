@@ -19,7 +19,7 @@ final class CorvusManager: ObservableObject {
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
     var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.3"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.4"
     }
     let engineVersion = "1.5.1"
     
@@ -127,14 +127,8 @@ final class CorvusManager: ObservableObject {
         // Load project path with smart discovery (Submodule > App Support > Dev Folder > Saved)
         self.corvusProjectPath = Self.detectBestProjectPath()
         
-        // Smart python path detection
-        let pythonCandidates = [
-            "/opt/homebrew/bin/python3",
-            "/usr/local/bin/python3",
-            "/usr/bin/python3"
-        ]
-        let defaultPython = pythonCandidates.first { FileManager.default.fileExists(atPath: $0) } ?? "/usr/bin/python3"
-        self.pythonExecutablePath = UserDefaults.standard.string(forKey: "CorvusPythonPath") ?? defaultPython
+        // Smart python path detection with environment verification
+        self.pythonExecutablePath = UserDefaults.standard.string(forKey: "CorvusPythonPath") ?? Self.detectBestPythonPath()
         
         // Initial health check
         checkSystemHealth()
@@ -153,6 +147,38 @@ final class CorvusManager: ObservableObject {
         pollTimer?.invalidate()
     }
     
+        // MARK: - Smart Python Detection
+    static func detectBestPythonPath() -> String {
+        let candidates = [
+            "/usr/local/bin/python3",
+            "/opt/homebrew/bin/python3",
+            NSHomeDirectory() + "/miniconda3/bin/python3",
+            NSHomeDirectory() + "/anaconda3/bin/python3",
+            NSHomeDirectory() + "/.pyenv/shims/python3",
+            "/Library/Frameworks/Python.framework/Versions/Current/bin/python3",
+            "/usr/bin/python3"
+        ]
+        
+        // 1. First preference: candidates that actually have requests / PIL installed
+        for candidate in candidates {
+            if FileManager.default.fileExists(atPath: candidate) {
+                let testProc = Process()
+                testProc.executableURL = URL(fileURLWithPath: candidate)
+                testProc.arguments = ["-c", "import requests"]
+                do {
+                    try testProc.run()
+                    testProc.waitUntilExit()
+                    if testProc.terminationStatus == 0 {
+                        return candidate
+                    }
+                } catch {}
+            }
+        }
+        
+        // 2. Fallback to any existing binary
+        return candidates.first { FileManager.default.fileExists(atPath: $0) } ?? "/usr/bin/python3"
+    }
+
     // MARK: - Smart Path Detection
     static func detectBestProjectPath() -> String {
         // 1. Saved custom path in UserDefaults (if valid and not Application Support directory)

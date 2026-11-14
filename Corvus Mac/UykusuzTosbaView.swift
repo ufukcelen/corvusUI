@@ -106,6 +106,8 @@ struct HaftalikProgramCard: View {
     @State private var runRender: Bool = true
     @State private var runThumbnail: Bool = true
     @State private var kadirVar: Bool = true
+    @State private var matchLoadError: String? = nil
+    @State private var hasSearched: Bool = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -199,6 +201,8 @@ struct CanliMacProgramCard: View {
     @State private var runRender: Bool = true
     @State private var runThumbnail: Bool = true
     @State private var kadirVar: Bool = true
+    @State private var matchLoadError: String? = nil
+    @State private var hasSearched: Bool = false
     
     var themeAccent: Color {
         isMacSonu ? AppTheme.accentCyan : AppTheme.accentGreen
@@ -230,11 +234,27 @@ struct CanliMacProgramCard: View {
             Divider()
                 .overlay(AppTheme.border)
             
-            // Step 1: Date & League
+            // Step 1: Date & League & Presenter
             VStack(alignment: .leading, spacing: 12) {
-                Text("1. Tarih ve Turnuva Seçimi")
-                    .font(.headline)
-                    .foregroundColor(AppTheme.textPrimary)
+                HStack {
+                    Text("1. Tarih, Turnuva ve Sunucu Seçimi")
+                        .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
+                    
+                    Spacer()
+                    
+                    // Kadir Var / Yok Switch - Always visible at top!
+                    Toggle(isOn: $kadirVar) {
+                        HStack(spacing: 5) {
+                            Image(systemName: kadirVar ? "person.2.fill" : "person.fill")
+                                .foregroundColor(kadirVar ? AppTheme.accentGreen : AppTheme.accentOrange)
+                            Text(kadirVar ? "Kadir Var" : "Kadir Yok (cy)")
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .toggleStyle(.button)
+                    .tint(kadirVar ? AppTheme.accentGreen.opacity(0.25) : AppTheme.accentOrange.opacity(0.25))
+                }
                 
                 HStack(spacing: 10) {
                     TextField("YYYY-MM-DD", text: $matchDate)
@@ -289,7 +309,27 @@ struct CanliMacProgramCard: View {
             }
             
             // Step 2: Match list
-            if !matches.isEmpty {
+            if let err = matchLoadError {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(AppTheme.accentOrange)
+                    Text(err)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                .padding(10)
+                .background(AppTheme.accentOrange.opacity(0.1))
+                .cornerRadius(8)
+            } else if hasSearched && matches.isEmpty && !isLoadingMatches {
+                HStack(spacing: 8) {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(AppTheme.textMuted)
+                    Text("Bu tarihte ve seçilen ligde planlanmış karşılaşma bulunamadı.")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textMuted)
+                }
+                .padding(.vertical, 4)
+            } else if !matches.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("2. Karşılaşma Seçin (\(matches.count) Maç Bulundu)")
                         .font(.headline)
@@ -428,12 +468,15 @@ struct CanliMacProgramCard: View {
     
     private func loadMatches() {
         isLoadingMatches = true
+        hasSearched = true
+        matchLoadError = nil
         matches = []
         selectedMatch = nil
         
         let bridgeCandidates = [
             Bundle.main.path(forResource: "corvus_bridge", ofType: "py"),
             (manager.corvusProjectPath as NSString).appendingPathComponent("corvus_bridge.py"),
+            (manager.corvusProjectPath as NSString).appendingPathComponent("CorvusEngine/corvus_bridge.py"),
             (manager.corvusProjectPath as NSString).deletingLastPathComponent.appending("/Corvus Mac/corvus_bridge.py"),
             "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/Corvus Mac/corvus_bridge.py"
         ]
@@ -441,8 +484,14 @@ struct CanliMacProgramCard: View {
         let bridgeScript = bridgeCandidates.compactMap { $0 }.first { FileManager.default.fileExists(atPath: $0) }
             ?? "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/Corvus Mac/corvus_bridge.py"
         
+        let pythonPath = CorvusManager.detectBestPythonPath()
         let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: manager.pythonExecutablePath)
+        proc.executableURL = URL(fileURLWithPath: pythonPath)
+        
+        var env = ProcessInfo.processInfo.environment
+        env["PYTHONUNBUFFERED"] = "1"
+        env["PATH"] = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:" + (env["PATH"] ?? "")
+        proc.environment = env
         
         var args = [bridgeScript, "--dir", manager.corvusProjectPath, "get_matches", "--tarih", matchDate]
         if !selectedLeagueId.isEmpty {
@@ -450,14 +499,27 @@ struct CanliMacProgramCard: View {
         }
         proc.arguments = args
         
-        let pipe = Pipe()
-        proc.standardOutput = pipe
+        let outPipe = Pipe()
+        let errPipe = Pipe()
+        proc.standardOutput = outPipe
+        proc.standardError = errPipe
         
         DispatchQueue.global(qos: .userInitiated).async {
-            try? proc.run()
-            proc.waitUntilExit()
+            do {
+                try proc.run()
+                proc.waitUntilExit()
+            } catch {
+                DispatchQueue.main.async {
+                    self.matchLoadError = "Python çalıştırılamadı: \(error.localizedDescription)"
+                    self.isLoadingMatches = false
+                }
+                return
+            }
             
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let data = outPipe.fileHandleForReading.readDataToEndOfFile()
+            let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
+            let errString = String(data: errData, encoding: .utf8) ?? ""
+            
             if let rawString = String(data: data, encoding: .utf8) {
                 if let openBracket = rawString.firstIndex(of: "["),
                    let closeBracket = rawString.lastIndex(of: "]"),
@@ -476,6 +538,10 @@ struct CanliMacProgramCard: View {
             
             DispatchQueue.main.async {
                 self.isLoadingMatches = false
+                if !errString.isEmpty && !errString.contains("Kalan günlük istek") {
+                    let cleanErr = errString.components(separatedBy: .newlines).filter { !$0.isEmpty }.last ?? errString
+                    self.matchLoadError = "Maç verisi alınamadı: \(cleanErr)"
+                }
             }
         }
     }

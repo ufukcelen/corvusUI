@@ -28,7 +28,7 @@ CANDIDATE_DIRS = [
 DEFAULT_PROJECT_DIR = next((d for d in CANDIDATE_DIRS if os.path.isdir(d)), BRIDGE_DIR)
 
 
-def setup_environment(project_dir):
+def setup_environment(project_dir, silent_error=False):
     p_dir = os.path.abspath(project_dir or DEFAULT_PROJECT_DIR)
     if not os.path.isdir(p_dir):
         p_dir = next((d for d in CANDIDATE_DIRS if os.path.isdir(d)), BRIDGE_DIR)
@@ -44,26 +44,77 @@ def setup_environment(project_dir):
             corvus.Confirm.ask = lambda *args, **kwargs: kwargs.get("default", True)
         return corvus, p_dir
     except ImportError as e:
-        sys.stderr.write(f"HATA: corvus modülü '{p_dir}' dizininden yüklenemedi: {e}\n")
-        sys.exit(1)
+        if not silent_error:
+            sys.stderr.write(f"HATA: corvus modülü '{p_dir}' dizininden yüklenemedi: {e}\n")
+        raise e
 
 
 def cmd_get_matches(args, corvus, p_dir):
     tarih = args.tarih or datetime.now(timezone(timedelta(hours=3))).strftime("%Y-%m-%d")
-    sezon_yili = corvus.sezon_hesapla(tarih)
+    
+    # Standalone API fallback if corvus is minimal or not fully loaded
+    api_key = ""
+    for k_path in [
+        os.path.join(p_dir, "api.txt"),
+        os.path.join(BRIDGE_DIR, "api.txt"),
+        os.path.expanduser("~/Library/Application Support/Corvus/Engine/api.txt"),
+        "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/api.txt"
+    ]:
+        if os.path.isfile(k_path):
+            try:
+                with open(k_path, "r", encoding="utf-8-sig") as kf:
+                    api_key = kf.read().strip()
+                    if api_key:
+                        break
+            except Exception:
+                pass
+
+    if not api_key and hasattr(corvus, "API_KEY"):
+        api_key = corvus.API_KEY or ""
+
+    if not api_key:
+        api_key = os.environ.get("API_SPORTS_KEY", "5d0d8fb851211e49ec4e3d36802e3b2b")
+
+    def hesapla_sezon(t):
+        parts = t.split("-")
+        y = int(parts[0])
+        m = int(parts[1]) if len(parts) > 1 else 1
+        return str(y if m >= 7 else y - 1)
+
+    sezon_yili = corvus.sezon_hesapla(tarih) if (corvus and hasattr(corvus, "sezon_hesapla")) else hesapla_sezon(tarih)
     
     if args.league:
         lig_id = int(args.league)
-        params = {"date": tarih, "league": lig_id, "season": sezon_yili, "timezone": "Europe/Istanbul"}
+        params = {"date": tarih, "league": str(lig_id), "season": sezon_yili, "timezone": "Europe/Istanbul"}
     else:
         params = {"date": tarih, "timezone": "Europe/Istanbul"}
-        
-    # Redirect console prints during API call so stdout is strictly clean JSON
-    with contextlib.redirect_stdout(sys.stderr):
-        tum = corvus.api_maclar(params)
-        
+
+    tum = []
+    if corvus and hasattr(corvus, "api_maclar"):
+        try:
+            with contextlib.redirect_stdout(sys.stderr):
+                tum = corvus.api_maclar(params)
+        except Exception as e:
+            sys.stderr.write(f"corvus.api_maclar hatası: {e}\n")
+
+    if not tum:
+        import urllib.request
+        import urllib.parse
+        qs = urllib.parse.urlencode(params)
+        req = urllib.request.Request(
+            f"https://v3.football.api-sports.io/fixtures?{qs}",
+            headers={"x-apisports-key": api_key, "User-Agent": "Corvus"}
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                tum = data.get("response", [])
+        except Exception as e:
+            sys.stderr.write(f"API Sports HTTP hatası: {e}\n")
+
+    hepsi_ligler = (corvus.HEPSI_LIG_IDLERI if corvus and hasattr(corvus, "HEPSI_LIG_IDLERI") else [203, 2, 3, 848, 5])
     if not args.league:
-        maclar = [m for m in tum if m.get("league", {}).get("id") in corvus.HEPSI_LIG_IDLERI]
+        maclar = [m for m in tum if m.get("league", {}).get("id") in hepsi_ligler]
     else:
         maclar = tum
 
@@ -619,7 +670,13 @@ def main():
         parser.print_help()
         sys.exit(0)
 
-    corvus, p_dir = setup_environment(args.dir)
+    if args.cmd == "get_matches":
+        try:
+            corvus, p_dir = setup_environment(args.dir, silent_error=True)
+        except Exception:
+            corvus, p_dir = None, (args.dir or DEFAULT_PROJECT_DIR)
+    else:
+        corvus, p_dir = setup_environment(args.dir)
 
     dispatch = {
         "get_matches": cmd_get_matches,
