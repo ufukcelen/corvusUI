@@ -30,7 +30,40 @@ CANDIDATE_DIRS = [
 DEFAULT_PROJECT_DIR = next((d for d in CANDIDATE_DIRS if os.path.isdir(d)), BRIDGE_DIR)
 
 
+def ensure_corvus_assets(p_dir):
+    """Ensures that Bfü Duyuru Projesi/Assets exists in p_dir. If missing, auto-downloads from GitHub repository."""
+    bfu_assets = os.path.join(p_dir, "Bfü Duyuru Projesi", "Assets")
+    if not os.path.isdir(bfu_assets):
+        sys.stderr.write("[CORVUS] Proje dosyalari ve Assets eksik görünüyor, GitHub'dan indiriliyor...\n")
+        try:
+            import urllib.request
+            import zipfile
+            import io
+            url = "https://github.com/ufukcelen/Corvus/archive/refs/heads/main.zip"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (CorvusMac)"})
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = resp.read()
+            z = zipfile.ZipFile(io.BytesIO(data))
+            prefix = "Corvus-main/"
+            for member in z.namelist():
+                if not member.startswith(prefix):
+                    continue
+                rel_path = member[len(prefix):]
+                if not rel_path:
+                    continue
+                target_path = os.path.join(p_dir, rel_path)
+                if member.endswith("/"):
+                    os.makedirs(target_path, exist_ok=True)
+                else:
+                    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                    with open(target_path, "wb") as f_out:
+                        f_out.write(z.read(member))
+            sys.stderr.write("[CORVUS] Proje dosyalari ve Assets basariyla indirildi.\n")
+        except Exception as err:
+            sys.stderr.write(f"[CORVUS UYARI] Otomatik dosya indirme basarisiz oldu: {err}\n")
+
 def setup_environment(project_dir, silent_error=False):
+    ensure_corvus_assets(os.path.abspath(project_dir or DEFAULT_PROJECT_DIR))
     p_dir = os.path.abspath(project_dir or DEFAULT_PROJECT_DIR)
     if not os.path.isdir(p_dir):
         p_dir = next((d for d in CANDIDATE_DIRS if os.path.isdir(d)), BRIDGE_DIR)
