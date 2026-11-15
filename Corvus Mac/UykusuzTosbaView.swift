@@ -883,14 +883,6 @@ struct TosbaLojistikCard: View {
     @ObservedObject var manager = CorvusManager.shared
     @State private var selectedVehicle: String = "otobus" // "otobus" or "tir"
     @State private var yayinSaati: String = "21:00"
-    @State private var isRendering: Bool = false
-    
-    let hours = [
-        "19:00", "19:30", "20:00", "20:30",
-        "21:00", "21:15", "21:30", "21:45",
-        "22:00", "22:15", "22:30", "22:45",
-        "23:00", "23:30", "00:00"
-    ]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -919,7 +911,7 @@ struct TosbaLojistikCard: View {
                             .foregroundColor(AppTheme.accentAmber)
                             .clipShape(Capsule())
                     }
-                    Text("Otobüs veya Tır duyuru animasyonunu seçin, saati belirleyin ve After Effects ile otomatik render alın.")
+                    Text("Otobüs veya Tır modunu seçin, saati yazın. JSON ve açıklama metni (.txt) otomatik oluşturulup video render edilir.")
                         .font(.subheadline)
                         .foregroundColor(AppTheme.textSecondary)
                 }
@@ -929,7 +921,7 @@ struct TosbaLojistikCard: View {
             
             Divider().overlay(AppTheme.border)
             
-            // Araç Seçimi (Otobüs / Tır)
+            // 1. Araç Seçimi (Otobüs / Tır)
             VStack(alignment: .leading, spacing: 12) {
                 Text("1. ARAÇ MODUNU SEÇİN")
                     .font(.caption.weight(.bold))
@@ -954,54 +946,65 @@ struct TosbaLojistikCard: View {
             
             Divider().overlay(AppTheme.border)
             
-            // Yayın Saati Seçimi
-            VStack(alignment: .leading, spacing: 12) {
-                Text("2. YAYIN SAATİNİ BELİRLEYİN")
+            // 2. Yayın Saati Textbox
+            VStack(alignment: .leading, spacing: 10) {
+                Text("2. YAYIN SAATİ (JSON'A YAZILIR)")
                     .font(.caption.weight(.bold))
                     .foregroundColor(AppTheme.textMuted)
                 
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 75), spacing: 8)], spacing: 8) {
-                    ForEach(hours, id: \.self) { h in
-                        Button {
-                            yayinSaati = h
-                        } label: {
-                            Text(h)
-                                .font(.callout.weight(yayinSaati == h ? .bold : .medium))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                                .background(yayinSaati == h ? AppTheme.accentAmber : AppTheme.surfaceElevated)
-                                .foregroundColor(yayinSaati == h ? .black : AppTheme.textPrimary)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(yayinSaati == h ? AppTheme.accentAmber : AppTheme.border, lineWidth: 1)
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                        .buttonStyle(.plain)
-                    }
+                HStack(spacing: 12) {
+                    Image(systemName: "clock.fill")
+                        .foregroundColor(AppTheme.accentAmber)
+                        .font(.system(size: 18))
+                    
+                    TextField("Örn: 21:00 veya 22:30", text: $yayinSaati)
+                        .textFieldStyle(.plain)
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(AppTheme.textPrimary)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(AppTheme.surfaceElevated)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(AppTheme.border, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .frame(maxWidth: 320)
             }
             
-            // Bilgi ve Açıklama Önizlemesi
+            // Otomatik Oluşturulacak .txt Önizlemesi
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Image(systemName: "doc.text.fill")
                         .foregroundColor(AppTheme.accentCyan)
-                    Text("Otomatik Oluşturulacak Duyuru Metni (.txt)")
+                    Text("Render Yanına Otomatik Kaydedilecek Metin Dosyası (.txt)")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(AppTheme.textPrimary)
                 }
                 
                 Text("""
-                Euro Truck Simulator severler toplanın!
+                Euro Truck Simulator severler toplanın! 
+
                 Tosba \(selectedVehicle == "otobus" ? "Turizm" : "Lojistik") yollarda.
-                Saat \(yayinSaati) Sadece YouTube’da. Yayında görüşürüz!
+
+
+                Saat \(yayinSaati.isEmpty ? "[yayın saati]" : yayinSaati) Sadece YouTube’da. Yayında görüşürüz!
+
+
                 #EuroTruckSimulator2 #coaches #Oyun #ets2 #canlıyayın
+
+
+
+
+
                 \(selectedVehicle == "otobus" ? "Cem ve Yiğiti etiketle" : "cemi etiketle")
+
+                müzik kafana göre veya cem e sorabilirsin.
                 """)
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundColor(AppTheme.textSecondary)
-                .padding(12)
+                .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(AppTheme.bg.opacity(0.8))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -1010,50 +1013,40 @@ struct TosbaLojistikCard: View {
             
             Divider().overlay(AppTheme.border)
             
-            // Render Butonları
-            HStack(spacing: 14) {
+            // Render Başlat Butonu
+            HStack {
+                Spacer()
                 Button {
-                    renderETS2(onlyJson: true)
+                    let cleanTime = yayinSaati.trimmingCharacters(in: .whitespaces)
+                    let finalTime = cleanTime.isEmpty ? "21:00" : cleanTime
+                    let args = [
+                        "ets2",
+                        "--mod", selectedVehicle,
+                        "--saat", finalTime
+                    ]
+                    let modeName = selectedVehicle == "otobus" ? "Tosba Turizm (Otobüs)" : "Tosba Lojistik (Tır)"
+                    manager.runBridgeTask(arguments: args, title: "ETS2: \(modeName) [\(finalTime)]")
                 } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "pencil.and.list.clipboard")
-                        Text("Sadece JSON & Metin Kaydet")
-                    }
-                    .font(.headline.weight(.semibold))
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 12)
-                    .background(AppTheme.surfaceElevated)
-                    .foregroundColor(AppTheme.textPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.border, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-                .disabled(manager.isRunningTask)
-                
-                Button {
-                    renderETS2(onlyJson: false)
-                } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 10) {
                         if manager.isRunningTask {
                             ProgressView()
                                 .scaleEffect(0.8)
                         } else {
                             Image(systemName: "play.circle.fill")
+                                .font(.title3)
                         }
                         Text(manager.isRunningTask ? "Render Alınıyor..." : "After Effects Render Başlat")
+                            .font(.headline.weight(.bold))
                     }
-                    .font(.headline.weight(.bold))
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 14)
                     .background(manager.isRunningTask ? Color.gray : AppTheme.accentAmber)
                     .foregroundColor(manager.isRunningTask ? .white : .black)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .corvusGlow(color: AppTheme.accentAmber, radius: 10, opacity: manager.isRunningTask ? 0 : 0.3)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .corvusGlow(color: AppTheme.accentAmber, radius: 10, opacity: manager.isRunningTask ? 0 : 0.35)
                 }
                 .buttonStyle(.plain)
                 .disabled(manager.isRunningTask)
-                
-                Spacer()
             }
         }
         .padding(28)
@@ -1099,18 +1092,5 @@ struct TosbaLojistikCard: View {
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
-    }
-    
-    private func renderETS2(onlyJson: Bool) {
-        var args = [
-            "ets2",
-            "--mod", selectedVehicle,
-            "--saat", yayinSaati
-        ]
-        if onlyJson {
-            args.append("--no-render")
-        }
-        let modeName = selectedVehicle == "otobus" ? "Tosba Turizm (Otobüs)" : "Tosba Lojistik (Tır)"
-        manager.runBridgeTask(arguments: args, title: "ETS2: \(modeName) [\(yayinSaati)]")
     }
 }

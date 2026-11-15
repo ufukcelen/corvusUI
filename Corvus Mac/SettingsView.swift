@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.3.1"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.3.2"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -695,6 +695,11 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.3.2", "Kasım 2026", [
+            "⌨️ ETS2 Saat Girişi Özgürleştirildi: Butonlar yerine serbest metin kutusu (TextField) eklendi; girilen saat doğrudan json dosyasına işlenir.",
+            "📄 Otomatik .txt Entegrasyonu: Render başlatıldığı anda sormadan tam şablona uygun açıklama dosyası çıktının yanına yazılır.",
+            "🚀 Tek Tıkla Doğrudan Render: Buton sadeleştirildi, doğrudan AE Render başlatır."
+        ]),
         ("v0.3.1", "Kasım 2026", [
             "🚛 Euro Truck Simulator 2 (ETS 2) Otomasyonu Eklendi: Otobüs (Tosba Turizm / otobus.aep) ve Tır (Tosba Lojistik / tir.aep) duyuru stüdyosu aktif.",
             "⏰ Saat seçimiyle otobusSaat.json / tir.json ve özel formatlı açıklama metni (.txt) otomatik üretilir.",
