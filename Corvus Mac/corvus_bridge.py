@@ -673,11 +673,13 @@ def cmd_fc_kariyer(args, corvus, p_dir):
 
 def patch_aep_time(aep_path, new_time_str):
     """
-    After Effects AEP dosyalarında metin katmanının asıl render edilen kaynak metni
-    (Source Text) UTF-16 Big-Endian (b'\x002\x002\x00:\x000\x000') olarak saklanır.
-    Ayrıca katman adında da UTF-8 olarak yer alır.
-    Bu fonksiyon hem UTF-16BE hem UTF-8 temsilini tam olarak yeni saat ile günceller.
-    Böylece After Effects aerender render alırken hiçbir zaman eski 22:00 saatine düşmez.
+    After Effects AEP dosyalarında:
+    1. Metin katmanının asıl render edilen Source Text değeri UTF-16 Big-Endian olarak saklanır.
+    2. Orijinal şablonda metnin başında 5 adet boşluk ('     HH:MM') bulunduğu için
+       metin ekranın sağına kayıyordu.
+    3. Bu fonksiyon baştaki 5 boşluğu metnin arkasına alarak ('HH:MM     ')
+       saatin tam matematiksel merkezde (CANLI YAYIN ile aynı X ekseninde, %50 ortalı)
+       çıkmasını sağlar.
     """
     if not os.path.exists(aep_path):
         return
@@ -692,21 +694,40 @@ def patch_aep_time(aep_path, new_time_str):
             return
 
         import re
-        # 1. UTF-8 Katman başlığı: b'     \d{2}:\d{2}' (10 bytes)
-        p_u8 = re.compile(rb'     \d{2}:\d{2}')
-        for m in list(p_u8.finditer(data)):
-            data[m.start():m.start()+10] = f"     {clean_time}".encode("utf-8")
+        # 1. UTF-8 Katman adı (10 bytes): "     HH:MM" -> "HH:MM     "
+        p_u8 = re.compile(rb'(?:     |\d{2}:\d{2}     |     \d{2}:\d{2})\d{0,2}')
+        for m in list(re.finditer(rb'     \d{2}:\d{2}', data)):
+            data[m.start():m.start()+10] = f"{clean_time}     ".encode("utf-8")
 
-        # 2. UTF-16BE Asıl Metin Değeri (10 bytes)
-        import re
-        p_u16 = re.compile(b"\x00[0-9]\x00[0-9]\x00:\x00[0-9]\x00[0-9]")
-        new_u16 = clean_time.encode("utf-16be")
-        for m in list(p_u16.finditer(data)):
-            data[m.start():m.start()+10] = new_u16
+        # 2. UTF-16BE Source Text tam bloğu: (fe ff 00 [spaces] 00 [digits] ...)
+        # Orijinal: 5 spaces + 5 digits = 10 chars (20 bytes)
+        # Hizalama Çözümü: 5 digits + 5 spaces (boşlukları arkaya atarak saat tam ortaya hizalanır)
+        u16_time = clean_time.encode("utf-16be")
+        u16_spaces = (" " * 5).encode("utf-16be")
+        u16_centered = u16_time + u16_spaces # 20 bytes
+
+        # Hem baştan boşluklu olanı hem de önceden düzeltilmiş olanı yakala:
+        p_u16_full = re.compile(b"\x00 \x00 \x00 \x00 \x00 \x00[0-9]\x00[0-9]\x00:\x00[0-9]\x00[0-9]")
+        p_u16_rev = re.compile(b"\x00[0-9]\x00[0-9]\x00:\x00[0-9]\x00[0-9]\x00 \x00 \x00 \x00 \x00 ")
+
+        found_patch = False
+        for m in list(p_u16_full.finditer(data)):
+            data[m.start():m.start()+20] = u16_centered
+            found_patch = True
+
+        for m in list(p_u16_rev.finditer(data)):
+            data[m.start():m.start()+20] = u16_centered
+            found_patch = True
+
+        # Fallback: Eğer sadece 10 byte saat bulunursa
+        if not found_patch:
+            p_u16_digits = re.compile(b"\x00[0-9]\x00[0-9]\x00:\x00[0-9]\x00[0-9]")
+            for m in list(p_u16_digits.finditer(data)):
+                data[m.start():m.start()+10] = u16_time
 
         with open(aep_path, "wb") as f:
             f.write(data)
-        print(f"[BAŞARILI] AEP Source Text saat katmanı güncellendi ({clean_time}): {os.path.basename(aep_path)}")
+        print(f"[BAŞARILI] AEP Source Text tam ortalanmış olarak güncellendi ({clean_time}): {os.path.basename(aep_path)}")
     except Exception as e:
         print(f"[UYARI] AEP saat yamalama hatası: {e}")
 
