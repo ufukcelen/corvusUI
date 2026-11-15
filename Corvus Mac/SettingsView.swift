@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.3.2"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.3.3"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -695,6 +695,10 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.3.3", "Kasım 2026", [
+            "⏱️ ETS2 Dinamik Saat Düzeltmesi: After Effects'in diskteki json dosyasını önbelleğe alıp saati 22:00'da sabit tutma sorunu çözüldü.",
+            "🎯 Çift Katmanlı Saat Güncelleme: Girilen saat hem json dosyasına hem de After Effects projesine doğrudan işlenir."
+        ]),
         ("v0.3.2", "Kasım 2026", [
             "⌨️ ETS2 Saat Girişi Özgürleştirildi: Butonlar yerine serbest metin kutusu (TextField) eklendi; girilen saat doğrudan json dosyasına işlenir.",
             "📄 Otomatik .txt Entegrasyonu: Render başlatıldığı anda sormadan tam şablona uygun açıklama dosyası çıktının yanına yazılır.",

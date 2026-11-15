@@ -671,22 +671,44 @@ def cmd_fc_kariyer(args, corvus, p_dir):
 
 
 
+def patch_aep_time(aep_path, new_time_str):
+    """
+    After Effects bazen diskteki json dosyasını önbelleğe alıp metin katmanını eski saatte tutabiliyor.
+    Bu fonksiyon hem AEP dosyasındaki gömülü statik saat metnini ('     22:00' veya önceki saati)
+    yeni saatle tam olarak güvenle günceller.
+    """
+    if not os.path.exists(aep_path):
+        return
+    try:
+        with open(aep_path, "rb") as f:
+            data = bytearray(f.read())
+        
+        # Format string to 5 chars (e.g. "21:00")
+        clean_time = new_time_str.strip()
+        if len(clean_time) == 4 and ":" in clean_time: # e.g. 9:00 -> 09:00
+            clean_time = "0" + clean_time
+        if len(clean_time) == 5:
+            # We search for pattern b'     \d{2}:\d{2}' (10 bytes)
+            import re
+            pattern = re.compile(rb'     \d{2}:\d{2}')
+            matches = list(pattern.finditer(data))
+            if matches:
+                replacement = f"     {clean_time}".encode("utf-8")
+                for m in matches:
+                    start = m.start()
+                    data[start:start+10] = replacement
+                with open(aep_path, "wb") as f:
+                    f.write(data)
+                print(f"[BAŞARILI] AEP statik saat katmanı doğrudan güncellendi ({clean_time}): {os.path.basename(aep_path)}")
+    except Exception as e:
+        print(f"[UYARI] AEP doğrudan saat yamalama atlandı: {e}")
+
 def cmd_ets2(args, corvus, p_dir):
     mod = getattr(args, "mod", "otobus").lower()
-    saat = getattr(args, "saat", "21:00")
+    saat = getattr(args, "saat", "21:00").strip()
+    if len(saat) == 4 and ":" in saat:
+        saat = "0" + saat
     render_yap = getattr(args, "render", True)
-
-    ets2_dir = os.path.join(p_dir, "ETS2")
-    if not os.path.isdir(ets2_dir):
-        # Check candidateler
-        for cand in [
-            os.path.expanduser("~/Desktop/ETS2"),
-            "/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'ım/CorvusCloud/AfterEffects_Sablonlari/ETS2",
-            os.path.join(p_dir, "ETS2")
-        ]:
-            if os.path.isdir(cand):
-                ets2_dir = cand
-                break
 
     if "tir" in mod:
         is_otobus = False
@@ -707,6 +729,49 @@ def cmd_ets2(args, corvus, p_dir):
         etiket_metni = "Cem ve Yiğiti etiketle"
         tur_metni = "Turizm"
 
+    # Tüm olası ETS2 konumlarını tara ve hepsini eşzamanlı güncelle
+    all_ets2_dirs = [
+        os.path.join(p_dir, "ETS2"),
+        os.path.expanduser("~/Desktop/ETS2"),
+        "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/ETS2",
+        "/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'ım/CorvusCloud/AfterEffects_Sablonlari/ETS2",
+        "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine/ETS2"
+    ]
+    # Unique directories
+    valid_dirs = []
+    for d in all_ets2_dirs:
+        if os.path.isdir(d) and d not in valid_dirs:
+            valid_dirs.append(d)
+
+    # 1. JSON güncelleme ve AEP doğrudan saat yamalama
+    json_data = {"baslik": saat}
+    primary_sub_dir = None
+    for ed in valid_dirs:
+        for sbf in [sub_folder, unicodedata.normalize("NFD", sub_folder), unicodedata.normalize("NFC", sub_folder)]:
+            cand_sub = os.path.join(ed, sbf)
+            if os.path.isdir(cand_sub):
+                if primary_sub_dir is None:
+                    primary_sub_dir = cand_sub
+                # JSON güncelle
+                target_json = os.path.join(cand_sub, json_name)
+                try:
+                    with open(target_json, "w", encoding="utf-8") as f:
+                        json.dump(json_data, f, ensure_ascii=False, indent=2)
+                    print(f"[BAŞARILI] {target_json} güncellendi: {saat}")
+                except Exception as e:
+                    print(f"[UYARI] {target_json} yazılamadı: {e}")
+                
+                # AEP patch
+                target_aep = os.path.join(cand_sub, aep_name)
+                patch_aep_time(target_aep, saat)
+
+    if not primary_sub_dir:
+        # Fallback to p_dir/ETS2/sub_folder
+        primary_sub_dir = os.path.join(p_dir, "ETS2", sub_folder)
+        os.makedirs(primary_sub_dir, exist_ok=True)
+        with open(os.path.join(primary_sub_dir, json_name), "w", encoding="utf-8") as f:
+            json.dump(json_data, f, ensure_ascii=False, indent=2)
+
     # Hedef klasör (Masaüstü/GG Ay_ETS2 Duyuru)
     aylar = {1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan", 5: "Mayıs", 6: "Haziran",
              7: "Temmuz", 8: "Ağustos", 9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"}
@@ -714,17 +779,6 @@ def cmd_ets2(args, corvus, p_dir):
     klasor_adi = f"{simdi.day} {aylar.get(simdi.month, 'Kasım')}_ETS2 Duyuru"
     klasor = os.path.join(os.path.expanduser("~/Desktop"), klasor_adi)
     os.makedirs(klasor, exist_ok=True)
-
-    # 1. JSON güncelleme
-    sub_dir = os.path.join(ets2_dir, sub_folder)
-    json_path = os.path.join(sub_dir, json_name)
-    try:
-        os.makedirs(sub_dir, exist_ok=True)
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump({"baslik": saat}, f, ensure_ascii=False, indent=2)
-        print(f"[BAŞARILI] {json_name} güncellendi: {saat}")
-    except Exception as e:
-        print(f"[HATA] {json_name} yazılamadı: {e}")
 
     # 2. .txt metnini yazma
     txt_icerik = f"""Euro Truck Simulator severler toplanın! 
@@ -756,7 +810,7 @@ müzik kafana göre veya cem e sorabilirsin.
 
     # 3. AE Render
     if render_yap:
-        proje_path = os.path.join(sub_dir, aep_name)
+        proje_path = os.path.join(primary_sub_dir, aep_name)
         if not os.path.exists(proje_path):
             print(f"[HATA] After Effects proje dosyası bulunamadı: {proje_path}")
             return
