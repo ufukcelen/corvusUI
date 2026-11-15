@@ -361,7 +361,7 @@ struct SettingsView: View {
                 .foregroundColor(AppTheme.accentCyan)
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.3.3"))")
+                Text("Yeni Corvus Mac Sürümü Hazır (\(manager.latestAppTag ?? "v0.3.4"))")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.textPrimary)
                 Text("Şu an çalışan sürüm: v\(manager.appVersion). Otomatik güncelleme GitHub Release paketini indirip uygulamayı anında yenisiyle değiştirecektir.")
@@ -695,6 +695,10 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.3.4", "Kasım 2026", [
+            "🎯 Kesin Saat Düzeltmesi (UTF-16 Source Text): After Effects'in video üzerinde basılı tuttuğu 22:00 statik metni ve önbelleği tamamen aşıldı.",
+            "⏱️ Girilen saat (örn: 23:45, 19:30) hem JSON'a hem de videodaki görsel saat katmanına anında %100 doğrulukla işlenir."
+        ]),
         ("v0.3.3", "Kasım 2026", [
             "⏱️ ETS2 Dinamik Saat Düzeltmesi: After Effects'in diskteki json dosyasını önbelleğe alıp saati 22:00'da sabit tutma sorunu çözüldü.",
             "🎯 Çift Katmanlı Saat Güncelleme: Girilen saat hem json dosyasına hem de After Effects projesine doğrudan işlenir."
