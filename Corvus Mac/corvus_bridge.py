@@ -33,7 +33,7 @@ DEFAULT_PROJECT_DIR = next((d for d in CANDIDATE_DIRS if os.path.isdir(d)), BRID
 def ensure_corvus_assets(p_dir):
     """Ensures that Bfü Duyuru Projesi/Assets exists and corvus.py is up to date in p_dir."""
     bfu_assets = os.path.join(p_dir, "Bfü Duyuru Projesi", "Assets")
-    needs_full_download = not os.path.isdir(bfu_assets)
+    needs_full_download = (not os.path.isdir(bfu_assets)) or (not os.path.isdir(os.path.join(p_dir, "ETS2")))
     
     # Always ensure corvus.py has latest fixes from GitHub
     corvus_py_path = os.path.join(p_dir, "corvus.py")
@@ -670,6 +670,100 @@ def cmd_fc_kariyer(args, corvus, p_dir):
             corvus.ae_render_baslat(video_adi, proje_yolu=proje, kompozisyon=comp, hedef_klasor=klasor)
 
 
+
+def cmd_ets2(args, corvus, p_dir):
+    mod = getattr(args, "mod", "otobus").lower()
+    saat = getattr(args, "saat", "21:00")
+    render_yap = getattr(args, "render", True)
+
+    ets2_dir = os.path.join(p_dir, "ETS2")
+    if not os.path.isdir(ets2_dir):
+        # Check candidateler
+        for cand in [
+            os.path.expanduser("~/Desktop/ETS2"),
+            "/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'ım/CorvusCloud/AfterEffects_Sablonlari/ETS2",
+            os.path.join(p_dir, "ETS2")
+        ]:
+            if os.path.isdir(cand):
+                ets2_dir = cand
+                break
+
+    if "tir" in mod:
+        is_otobus = False
+        sub_folder = "Tır"
+        aep_name = "tir.aep"
+        comp_name = "tirMain"
+        json_name = "tir.json"
+        video_adi = f"ETS2_Tir_{saat.replace(':', '')}.mp4"
+        etiket_metni = "cemi etiketle"
+        tur_metni = "Lojistik"
+    else:
+        is_otobus = True
+        sub_folder = "Otobüs"
+        aep_name = "otobus.aep"
+        comp_name = "otobusMain"
+        json_name = "otobusSaat.json"
+        video_adi = f"ETS2_Otobus_{saat.replace(':', '')}.mp4"
+        etiket_metni = "Cem ve Yiğiti etiketle"
+        tur_metni = "Turizm"
+
+    # Hedef klasör (Masaüstü/GG Ay_ETS2 Duyuru)
+    aylar = {1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan", 5: "Mayıs", 6: "Haziran",
+             7: "Temmuz", 8: "Ağustos", 9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"}
+    simdi = datetime.now()
+    klasor_adi = f"{simdi.day} {aylar.get(simdi.month, 'Kasım')}_ETS2 Duyuru"
+    klasor = os.path.join(os.path.expanduser("~/Desktop"), klasor_adi)
+    os.makedirs(klasor, exist_ok=True)
+
+    # 1. JSON güncelleme
+    sub_dir = os.path.join(ets2_dir, sub_folder)
+    json_path = os.path.join(sub_dir, json_name)
+    try:
+        os.makedirs(sub_dir, exist_ok=True)
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump({"baslik": saat}, f, ensure_ascii=False, indent=2)
+        print(f"[BAŞARILI] {json_name} güncellendi: {saat}")
+    except Exception as e:
+        print(f"[HATA] {json_name} yazılamadı: {e}")
+
+    # 2. .txt metnini yazma
+    txt_icerik = f"""Euro Truck Simulator severler toplanın! 
+
+Tosba {tur_metni} yollarda.
+
+
+Saat {saat} Sadece YouTube’da. Yayında görüşürüz!
+
+
+#EuroTruckSimulator2 #coaches #Oyun #ets2 #canlıyayın
+
+
+
+
+
+{etiket_metni}
+
+müzik kafana göre veya cem e sorabilirsin.
+"""
+    txt_adi = video_adi.replace(".mp4", ".txt")
+    txt_path = os.path.join(klasor, txt_adi)
+    try:
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(txt_icerik)
+        print(f"[BAŞARILI] Duyuru metni kaydedildi: {txt_path}")
+    except Exception as e:
+        print(f"[UYARI] Metin dosyası yazılamadı: {e}")
+
+    # 3. AE Render
+    if render_yap:
+        proje_path = os.path.join(sub_dir, aep_name)
+        if not os.path.exists(proje_path):
+            print(f"[HATA] After Effects proje dosyası bulunamadı: {proje_path}")
+            return
+        print(f"[Corvus Mac] ETS2 ({tur_metni}) Render Başlatılıyor: {video_adi} -> {klasor}")
+        corvus.ae_render_baslat(video_adi, proje_yolu=proje_path, kompozisyon=comp_name, hedef_klasor=klasor)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Corvus Bridge CLI")
     parser.add_argument("--dir", default=DEFAULT_PROJECT_DIR, help="Corvus Proje Dizini")
@@ -731,6 +825,12 @@ def main():
     p_tm.add_argument("--etiketler", default="")
     p_tm.add_argument("--render", action="store_true")
 
+    # ets2
+    p_ets = subparsers.add_parser("ets2")
+    p_ets.add_argument("--mod", choices=["otobus", "tir"], default="otobus", help="Otobüs veya Tır modu")
+    p_ets.add_argument("--saat", default="21:00", help="Yayın saati")
+    p_ets.add_argument("--no-render", dest="render", action="store_false", default=True, help="Sadece JSON ve metin hazırla")
+
     # fc_kariyer
     p_fc = subparsers.add_parser("fc_kariyer")
     p_fc.add_argument("--takim", default="Feyenoord")
@@ -761,6 +861,7 @@ def main():
         "mocas_bey": cmd_mocas_bey,
         "tek_mac": cmd_tek_mac,
         "fc_kariyer": cmd_fc_kariyer,
+        "ets2": cmd_ets2,
     }
 
     if args.cmd in dispatch:

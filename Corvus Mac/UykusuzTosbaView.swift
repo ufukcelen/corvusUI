@@ -878,44 +878,239 @@ struct FcKariyerCard: View {
     }
 }
 
-// MARK: - 7. Tosba Lojistik Card
+// MARK: - 7. Tosba Lojistik (ETS 2) Card
 struct TosbaLojistikCard: View {
     @ObservedObject var manager = CorvusManager.shared
+    @State private var selectedVehicle: String = "otobus" // "otobus" or "tir"
+    @State private var yayinSaati: String = "21:00"
+    @State private var isRendering: Bool = false
+    
+    let hours = [
+        "19:00", "19:30", "20:00", "20:30",
+        "21:00", "21:15", "21:30", "21:45",
+        "22:00", "22:15", "22:30", "22:45",
+        "23:00", "23:30", "00:00"
+    ]
     
     var body: some View {
-        VStack(spacing: 24) {
-            ZStack {
-                Circle()
-                    .fill(AppTheme.accentCyan.opacity(0.12))
-                    .frame(width: 80, height: 80)
-                Image(systemName: "truck.box.fill")
-                    .font(.system(size: 38))
-                    .foregroundColor(AppTheme.accentCyan)
+        VStack(alignment: .leading, spacing: 24) {
+            // Header
+            HStack(spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(AppTheme.accentAmber.opacity(0.15))
+                        .frame(width: 54, height: 54)
+                    Image(systemName: selectedVehicle == "otobus" ? "bus.fill" : "truck.box.fill")
+                        .font(.system(size: 26))
+                        .foregroundColor(AppTheme.accentAmber)
+                }
+                .corvusGlow(color: AppTheme.accentAmber, radius: 8, opacity: 0.25)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text("Euro Truck Simulator 2 Duyuru")
+                            .font(.title3.weight(.bold))
+                            .foregroundColor(AppTheme.textPrimary)
+                        Text(selectedVehicle == "otobus" ? "Tosba Turizm" : "Tosba Lojistik")
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(AppTheme.accentAmber.opacity(0.2))
+                            .foregroundColor(AppTheme.accentAmber)
+                            .clipShape(Capsule())
+                    }
+                    Text("Otobüs veya Tır duyuru animasyonunu seçin, saati belirleyin ve After Effects ile otomatik render alın.")
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                
+                Spacer()
             }
-            .corvusGlow(color: AppTheme.accentCyan, radius: 10, opacity: 0.2)
             
-            VStack(spacing: 8) {
-                Text("Tosba Lojistik Otomasyonu")
-                    .font(.title2.weight(.bold))
+            Divider().overlay(AppTheme.border)
+            
+            // Araç Seçimi (Otobüs / Tır)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("1. ARAÇ MODUNU SEÇİN")
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(AppTheme.textMuted)
+                
+                HStack(spacing: 16) {
+                    vehicleOption(
+                        id: "otobus",
+                        title: "Otobüs (Tosba Turizm)",
+                        desc: "otobus.aep • otobusMain • Cem & Yiğit Etiketli",
+                        icon: "bus.fill"
+                    )
+                    
+                    vehicleOption(
+                        id: "tir",
+                        title: "Tır (Tosba Lojistik)",
+                        desc: "tir.aep • tirMain • Cem Etiketli",
+                        icon: "truck.box.fill"
+                    )
+                }
+            }
+            
+            Divider().overlay(AppTheme.border)
+            
+            // Yayın Saati Seçimi
+            VStack(alignment: .leading, spacing: 12) {
+                Text("2. YAYIN SAATİNİ BELİRLEYİN")
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(AppTheme.textMuted)
+                
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 75), spacing: 8)], spacing: 8) {
+                    ForEach(hours, id: \.self) { h in
+                        Button {
+                            yayinSaati = h
+                        } label: {
+                            Text(h)
+                                .font(.callout.weight(yayinSaati == h ? .bold : .medium))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(yayinSaati == h ? AppTheme.accentAmber : AppTheme.surfaceElevated)
+                                .foregroundColor(yayinSaati == h ? .black : AppTheme.textPrimary)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(yayinSaati == h ? AppTheme.accentAmber : AppTheme.border, lineWidth: 1)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            
+            // Bilgi ve Açıklama Önizlemesi
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "doc.text.fill")
+                        .foregroundColor(AppTheme.accentCyan)
+                    Text("Otomatik Oluşturulacak Duyuru Metni (.txt)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppTheme.textPrimary)
+                }
+                
+                Text("""
+                Euro Truck Simulator severler toplanın!
+                Tosba \(selectedVehicle == "otobus" ? "Turizm" : "Lojistik") yollarda.
+                Saat \(yayinSaati) Sadece YouTube’da. Yayında görüşürüz!
+                #EuroTruckSimulator2 #coaches #Oyun #ets2 #canlıyayın
+                \(selectedVehicle == "otobus" ? "Cem ve Yiğiti etiketle" : "cemi etiketle")
+                """)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundColor(AppTheme.textSecondary)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppTheme.bg.opacity(0.8))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppTheme.border, lineWidth: 1))
+            }
+            
+            Divider().overlay(AppTheme.border)
+            
+            // Render Butonları
+            HStack(spacing: 14) {
+                Button {
+                    renderETS2(onlyJson: true)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "pencil.and.list.clipboard")
+                        Text("Sadece JSON & Metin Kaydet")
+                    }
+                    .font(.headline.weight(.semibold))
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .background(AppTheme.surfaceElevated)
                     .foregroundColor(AppTheme.textPrimary)
-                Text("Euro Truck Simulator 2 ve ortak konvoy yayınları için yakında eklenecektir.")
-                    .font(.subheadline)
-                    .foregroundColor(AppTheme.textSecondary)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.border, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .disabled(manager.isRunningTask)
+                
+                Button {
+                    renderETS2(onlyJson: false)
+                } label: {
+                    HStack(spacing: 8) {
+                        if manager.isRunningTask {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "play.circle.fill")
+                        }
+                        Text(manager.isRunningTask ? "Render Alınıyor..." : "After Effects Render Başlat")
+                    }
+                    .font(.headline.weight(.bold))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(manager.isRunningTask ? Color.gray : AppTheme.accentAmber)
+                    .foregroundColor(manager.isRunningTask ? .white : .black)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .corvusGlow(color: AppTheme.accentAmber, radius: 10, opacity: manager.isRunningTask ? 0 : 0.3)
+                }
+                .buttonStyle(.plain)
+                .disabled(manager.isRunningTask)
+                
+                Spacer()
             }
-            
-            Text("Geliştirme Aşamasında")
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(AppTheme.surfaceElevated)
-                .foregroundColor(AppTheme.textMuted)
-                .overlay(
-                    Capsule().stroke(AppTheme.border, lineWidth: 1)
-                )
-                .clipShape(Capsule())
         }
+        .padding(28)
+        .corvusCard(padding: 28, radius: 16)
+    }
+    
+    private func vehicleOption(id: String, title: String, desc: String, icon: String) -> some View {
+        Button {
+            selectedVehicle = id
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(selectedVehicle == id ? AppTheme.accentAmber.opacity(0.2) : AppTheme.surfaceElevated)
+                        .frame(width: 44, height: 44)
+                    Image(systemName: icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(selectedVehicle == id ? AppTheme.accentAmber : AppTheme.textSecondary)
+                }
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.headline.weight(.semibold))
+                        .foregroundColor(AppTheme.textPrimary)
+                    Text(desc)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: selectedVehicle == id ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(selectedVehicle == id ? AppTheme.accentAmber : AppTheme.textMuted)
+                    .font(.title3)
+            }
+            .padding(16)
+            .background(selectedVehicle == id ? AppTheme.accentAmber.opacity(0.08) : AppTheme.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(selectedVehicle == id ? AppTheme.accentAmber : AppTheme.border, lineWidth: 1.5)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
-        .padding(40)
-        .corvusCard(padding: 40, radius: 16)
+    }
+    
+    private func renderETS2(onlyJson: Bool) {
+        var args = [
+            "ets2",
+            "--mod", selectedVehicle,
+            "--saat", yayinSaati
+        ]
+        if onlyJson {
+            args.append("--no-render")
+        }
+        let modeName = selectedVehicle == "otobus" ? "Tosba Turizm (Otobüs)" : "Tosba Lojistik (Tır)"
+        manager.runBridgeTask(arguments: args, title: "ETS2: \(modeName) [\(yayinSaati)]")
     }
 }
