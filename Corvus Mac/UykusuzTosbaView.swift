@@ -1063,9 +1063,9 @@ struct TosbaLojistikCard: View {
         let fileName = selectedVehicle == "otobus" ? "otobusSaat.json" : "tir.json"
         let folderName = selectedVehicle == "otobus" ? "Otobüs" : "Tır"
         let candidatePaths = [
-            NSHomeDirectory() + "/Desktop/ETS2/\(folderName)/\(fileName)",
             (manager.corvusProjectPath as NSString).appendingPathComponent("ETS2/\(folderName)/\(fileName)"),
-            "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/ETS2/\(folderName)/\(fileName)"
+            "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/ETS2/\(folderName)/\(fileName)",
+            "/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'Ä±m/CorvusCloud/AfterEffects_Sablonlari/ETS2/\(folderName)/\(fileName)"
         ]
         for path in candidatePaths {
             if let data = try? Data(contentsOf: URL(fileURLWithPath: path)),

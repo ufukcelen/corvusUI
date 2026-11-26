@@ -758,39 +758,12 @@ def cmd_ets2(args, corvus, p_dir):
         etiket_metni = "Cem ve Yiğiti etiketle"
         tur_metni = "Turizm"
 
-    # Always ensure ~/Desktop/ETS2 exists with all assets and templates
-    desktop_ets2 = os.path.expanduser("~/Desktop/ETS2")
-    import shutil
-    for s_name, a_file in [("Otobüs", "otobus.aep"), ("Tır", "tir.aep")]:
-        s_dir = os.path.join(desktop_ets2, s_name)
-        os.makedirs(s_dir, exist_ok=True)
-        src_candidates = [
-            os.path.join(p_dir, "ETS2", s_name),
-            os.path.join("/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/ETS2", s_name),
-            os.path.join("/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine/ETS2", s_name),
-            os.path.join("/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'ım/CorvusCloud/AfterEffects_Sablonlari/ETS2", s_name)
-        ]
-        for sc in src_candidates:
-            if os.path.isdir(sc):
-                for f in os.listdir(sc):
-                    dest_f = os.path.join(s_dir, f)
-                    if not os.path.exists(dest_f):
-                        src_f = os.path.join(sc, f)
-                        try:
-                            if os.path.isdir(src_f):
-                                shutil.copytree(src_f, dest_f)
-                            else:
-                                shutil.copy2(src_f, dest_f)
-                        except Exception:
-                            pass
-                break
-
     all_ets2_dirs = [
-        desktop_ets2,
         os.path.join(p_dir, "ETS2"),
         "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/ETS2",
-        "/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'ım/CorvusCloud/AfterEffects_Sablonlari/ETS2",
-        "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine/ETS2"
+        os.path.join(REPO_ROOT, "CorvusEngine", "ETS2"),
+        "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine/ETS2",
+        "/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'ım/CorvusCloud/AfterEffects_Sablonlari/ETS2"
     ]
     valid_dirs = []
     for d in all_ets2_dirs:
@@ -820,8 +793,8 @@ def cmd_ets2(args, corvus, p_dir):
                 target_aep = os.path.join(cand_sub, aep_name)
                 patch_aep_time(target_aep, saat)
 
-    if not primary_sub_dir:
-        primary_sub_dir = os.path.join(desktop_ets2, sub_folder)
+    if not primary_sub_dir and valid_dirs:
+        primary_sub_dir = os.path.join(valid_dirs[0], sub_folder)
         os.makedirs(primary_sub_dir, exist_ok=True)
         for j_name in ["tir.json", "otobusSaat.json"]:
             with open(os.path.join(primary_sub_dir, j_name), "w", encoding="utf-8") as f:

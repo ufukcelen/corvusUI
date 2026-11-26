@@ -695,10 +695,15 @@ struct ChangelogSheet: View {
     @Environment(\.dismiss) var dismiss
     
     let changelogs: [(version: String, date: String, items: [String])] = [
+        ("v0.3.7", "Kasım 2026", [
+            "🧹 Masaüstü Temizliği: ETS2 şablonları ve görsel varlıkları masaüstüne kopyalanmaz; doğrudan The Projeler ve CorvusEngine dizinlerinden okunur. Masaüstünde sadece nihai çıktı klasörü oluşturulur.",
+            "🕒 Akıllı Saat Yükleme: Arayüz açıldığında veya Otobüs/Tır modu seçildiğinde son kullanılan saat otomatik yüklenir.",
+            "🎯 Kusursuz Saat Hizalaması: Saatin hem UTF-8 hem de UTF-16 blokları tam ortalanmış olarak After Effects projesine işlenir."
+        ]),
         ("v0.3.6", "Kasım 2026", [
-            "🚚 ETS2 Render Saat Güncelleme Güçlendirmesi: After Effects dahili dosya yolları (~/Desktop/ETS2) ve görseller otomatik senkronize edilerek video çıktısındaki saat güncelleme hatası tamamen giderildi.",
-            "🕒 Akıllı Saat Yükleme: Arayüz açıldığında veya Otobüs/Tır modu değiştirildiğinde son kullanılan yayın saati otomatik yüklenir.",
-            "🎯 Çift Yönlü Katman Yamalama: Hem önden hem arkadan boşluklu katman adları ve UTF-16 metin blokları çift yönlü taranarak her koşulda güncellenmesi sağlandı."
+            "🚚 ETS2 Render Saat Güncelleme Güçlendirmesi: Saat yamalama algoritması güncellendi.",
+            "🕒 Akıllı Saat Yükleme: Otobüs/Tır modu arasında geçiş desteği.",
+            "🎯 Çift Yönlü Katman Yamalama: Katman adları ve UTF-16 metin blokları çift yönlü taranarak güncellenmesi sağlandı."
         ]),
         ("v0.3.5", "Kasım 2026", [
             "🎯 ETS2 Saat Hizalaması Kusursuzlaştırıldı: Saatin sağa kaymasına sebep olan şablon boşlukları otomatik dengelenerek ekranın tam matematiksel ortasına (%50) sabitlendi.",
