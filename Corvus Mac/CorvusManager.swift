@@ -19,7 +19,7 @@ final class CorvusManager: ObservableObject {
     let ntfyCalendarTopic = "tellal_takvim_sync_u_y_8832"
     let ntfyChatTopic = "tellal_chat_sync_u_y_8832"
     var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.3.5"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.3.6"
     }
     let engineVersion = "1.5.1"
     
@@ -1026,6 +1026,7 @@ final class CorvusManager: ObservableObject {
         
         // Set environment
         var env = ProcessInfo.processInfo.environment
+        env["PATH"] = "/opt/homebrew/bin:/usr/local/bin:" + (env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin")
         env["PYTHONUNBUFFERED"] = "1"
         env["CA_ASSERT_MAIN_THREAD_TRANSACTIONS"] = "0"
         process.environment = env

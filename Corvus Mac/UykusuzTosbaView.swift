@@ -1051,6 +1051,31 @@ struct TosbaLojistikCard: View {
         }
         .padding(28)
         .corvusCard(padding: 28, radius: 16)
+        .onAppear {
+            loadCurrentHour()
+        }
+        .onChange(of: selectedVehicle) { _ in
+            loadCurrentHour()
+        }
+    }
+    
+    private func loadCurrentHour() {
+        let fileName = selectedVehicle == "otobus" ? "otobusSaat.json" : "tir.json"
+        let folderName = selectedVehicle == "otobus" ? "Otobüs" : "Tır"
+        let candidatePaths = [
+            NSHomeDirectory() + "/Desktop/ETS2/\(folderName)/\(fileName)",
+            (manager.corvusProjectPath as NSString).appendingPathComponent("ETS2/\(folderName)/\(fileName)"),
+            "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/ETS2/\(folderName)/\(fileName)"
+        ]
+        for path in candidatePaths {
+            if let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let baslik = json["baslik"] as? String,
+               !baslik.trimmingCharacters(in: .whitespaces).isEmpty {
+                self.yayinSaati = baslik.trimmingCharacters(in: .whitespaces)
+                break
+            }
+        }
     }
     
     private func vehicleOption(id: String, title: String, desc: String, icon: String) -> some View {

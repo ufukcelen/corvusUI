@@ -694,9 +694,9 @@ def patch_aep_time(aep_path, new_time_str):
             return
 
         import re
-        # 1. UTF-8 Katman adı (10 bytes): "     HH:MM" -> "HH:MM     "
-        p_u8 = re.compile(rb'(?:     |\d{2}:\d{2}     |     \d{2}:\d{2})\d{0,2}')
-        for m in list(re.finditer(rb'     \d{2}:\d{2}', data)):
+        # 1. UTF-8 Katman adı (10 bytes): "     HH:MM" veya "HH:MM     "
+        p_u8 = re.compile(rb'(?:     \d{2}:\d{2}|\d{2}:\d{2}     )')
+        for m in list(p_u8.finditer(data)):
             data[m.start():m.start()+10] = f"{clean_time}     ".encode("utf-8")
 
         # 2. UTF-16BE Source Text tam bloğu: (fe ff 00 [spaces] 00 [digits] ...)
@@ -706,7 +706,7 @@ def patch_aep_time(aep_path, new_time_str):
         u16_spaces = (" " * 5).encode("utf-16be")
         u16_centered = u16_time + u16_spaces # 20 bytes
 
-        # Hem baştan boşluklu olanı hem de önceden düzeltilmiş olanı yakala:
+        # Hem baştan boşluklu olanı hem de arkadan boşluklu olanı yakala:
         p_u16_full = re.compile(b"\x00 \x00 \x00 \x00 \x00 \x00[0-9]\x00[0-9]\x00:\x00[0-9]\x00[0-9]")
         p_u16_rev = re.compile(b"\x00[0-9]\x00[0-9]\x00:\x00[0-9]\x00[0-9]\x00 \x00 \x00 \x00 \x00 ")
 
@@ -730,6 +730,7 @@ def patch_aep_time(aep_path, new_time_str):
         print(f"[BAŞARILI] AEP Source Text tam ortalanmış olarak güncellendi ({clean_time}): {os.path.basename(aep_path)}")
     except Exception as e:
         print(f"[UYARI] AEP saat yamalama hatası: {e}")
+
 
 def cmd_ets2(args, corvus, p_dir):
     mod = getattr(args, "mod", "otobus").lower()
@@ -757,9 +758,36 @@ def cmd_ets2(args, corvus, p_dir):
         etiket_metni = "Cem ve Yiğiti etiketle"
         tur_metni = "Turizm"
 
+    # Always ensure ~/Desktop/ETS2 exists with all assets and templates
+    desktop_ets2 = os.path.expanduser("~/Desktop/ETS2")
+    import shutil
+    for s_name, a_file in [("Otobüs", "otobus.aep"), ("Tır", "tir.aep")]:
+        s_dir = os.path.join(desktop_ets2, s_name)
+        os.makedirs(s_dir, exist_ok=True)
+        src_candidates = [
+            os.path.join(p_dir, "ETS2", s_name),
+            os.path.join("/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/ETS2", s_name),
+            os.path.join("/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine/ETS2", s_name),
+            os.path.join("/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'ım/CorvusCloud/AfterEffects_Sablonlari/ETS2", s_name)
+        ]
+        for sc in src_candidates:
+            if os.path.isdir(sc):
+                for f in os.listdir(sc):
+                    dest_f = os.path.join(s_dir, f)
+                    if not os.path.exists(dest_f):
+                        src_f = os.path.join(sc, f)
+                        try:
+                            if os.path.isdir(src_f):
+                                shutil.copytree(src_f, dest_f)
+                            else:
+                                shutil.copy2(src_f, dest_f)
+                        except Exception:
+                            pass
+                break
+
     all_ets2_dirs = [
+        desktop_ets2,
         os.path.join(p_dir, "ETS2"),
-        os.path.expanduser("~/Desktop/ETS2"),
         "/Users/ufukcelen/Desktop/The Projeler/Duyurular/Youtube Duyuru Otomasyon/ETS2",
         "/Users/ufukcelen/Library/CloudStorage/GoogleDrive-ufukcelen@gmail.com/Drive'ım/CorvusCloud/AfterEffects_Sablonlari/ETS2",
         "/Users/ufukcelen/Desktop/Dev/CorvusUI/Corvus Mac/CorvusEngine/ETS2"
@@ -793,7 +821,7 @@ def cmd_ets2(args, corvus, p_dir):
                 patch_aep_time(target_aep, saat)
 
     if not primary_sub_dir:
-        primary_sub_dir = os.path.join(p_dir, "ETS2", sub_folder)
+        primary_sub_dir = os.path.join(desktop_ets2, sub_folder)
         os.makedirs(primary_sub_dir, exist_ok=True)
         for j_name in ["tir.json", "otobusSaat.json"]:
             with open(os.path.join(primary_sub_dir, j_name), "w", encoding="utf-8") as f:
@@ -843,6 +871,7 @@ müzik kafana göre veya cem e sorabilirsin.
             return
         print(f"[Corvus Mac] ETS2 ({tur_metni}) Render Başlatılıyor: {video_adi} -> {klasor}")
         corvus.ae_render_baslat(video_adi, proje_yolu=proje_path, kompozisyon=comp_name, hedef_klasor=klasor)
+
 
 
 def main():
