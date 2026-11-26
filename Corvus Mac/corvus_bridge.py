@@ -75,6 +75,30 @@ def ensure_corvus_assets(p_dir):
         # Non-blocking, continue
         pass
 
+
+    # Check if ETS2 templates need update by comparing size with GitHub
+    for aep_rel in ["ETS2/Tır/tir.aep", "ETS2/Otobüs/otobus.aep"]:
+        local_aep = os.path.join(p_dir, aep_rel)
+        try:
+            import urllib.request, json
+            from urllib.parse import quote
+            api_url = f"https://api.github.com/repos/ufukcelen/Corvus/contents/{quote(aep_rel)}?ref=main"
+            req = urllib.request.Request(api_url, headers={"User-Agent": "Mozilla/5.0 (CorvusMac)"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                meta = json.loads(resp.read().decode("utf-8"))
+                remote_size = meta.get("size")
+                if remote_size and (not os.path.exists(local_aep) or os.path.getsize(local_aep) != remote_size):
+                    sys.stderr.write(f"[CORVUS] Guncel {os.path.basename(aep_rel)} ({remote_size} byte) GitHub'dan indiriliyor...\n")
+                    raw_url = meta.get("download_url") or f"https://raw.githubusercontent.com/ufukcelen/Corvus/main/{quote(aep_rel)}"
+                    raw_req = urllib.request.Request(raw_url, headers={"User-Agent": "Mozilla/5.0 (CorvusMac)"})
+                    with urllib.request.urlopen(raw_req, timeout=30) as raw_resp:
+                        os.makedirs(os.path.dirname(local_aep), exist_ok=True)
+                        with open(local_aep, "wb") as f_aep:
+                            f_aep.write(raw_resp.read())
+                    sys.stderr.write(f"[CORVUS] Guncel {os.path.basename(aep_rel)} basariyla kaydedildi.\n")
+        except Exception:
+            pass
+
     if needs_full_download:
         sys.stderr.write("[CORVUS] Proje dosyalari ve Assets eksik görünüyor, GitHub'dan indiriliyor...\n")
         try:

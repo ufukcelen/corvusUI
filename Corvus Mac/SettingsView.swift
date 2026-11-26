@@ -696,6 +696,7 @@ struct ChangelogSheet: View {
     
     let changelogs: [(version: String, date: String, items: [String])] = [
         ("v0.3.7", "Kasım 2026", [
+            "🚛 Güncel Tır Şablonu (tir.aep): Yeni After Effects şablonu entegre edildi ve tüm kullanıcılar için GitHub otomatik güncellemesi eklendi.",
             "🧹 Masaüstü Temizliği: ETS2 şablonları ve görsel varlıkları masaüstüne kopyalanmaz; doğrudan The Projeler ve CorvusEngine dizinlerinden okunur. Masaüstünde sadece nihai çıktı klasörü oluşturulur.",
             "🕒 Akıllı Saat Yükleme: Arayüz açıldığında veya Otobüs/Tır modu seçildiğinde son kullanılan saat otomatik yüklenir.",
             "🎯 Kusursuz Saat Hizalaması: Saatin hem UTF-8 hem de UTF-16 blokları tam ortalanmış olarak After Effects projesine işlenir."
